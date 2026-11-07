@@ -77,33 +77,31 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
 .book .tag { justify-self: start; margin: 8px 12px 0; font-family: var(--body); font-size: .8125rem; background: var(--sun); border: 2px solid var(--line); border-radius: 999px; padding: 0 10px; }
 .book[disabled] { cursor: default; opacity: .6; }
 .book .soon { aspect-ratio: 4 / 3; display: grid; place-items: center; font-size: 3rem; background: #eef3f7; border-bottom: 3px solid var(--line); }
-#reader { position: fixed; inset: 0; z-index: 22; background: #fff8ea; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; padding: calc(env(safe-area-inset-top, 0px) + 10px) max(12px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 10px) max(12px, env(safe-area-inset-left, 0px)); gap: 10px; }
-.r-top, .r-bot { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.r-top b { font-family: var(--display); font-weight: 400; font-size: 1.25rem; text-align: center; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.r-btn { font-family: var(--display); font-size: 1.125rem; color: var(--ink); background: var(--paper); border: 3px solid var(--line); border-radius: 999px; padding: 4px 14px; cursor: pointer; white-space: nowrap; }
-.r-btn.big { font-size: 1.375rem; padding: 6px 22px; background: var(--sun); }
-.r-btn[disabled] { opacity: .35; cursor: default; }
-.r-page { min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 14px; align-content: start; justify-items: center; }
-.r-art { width: 100%; min-height: 0; display: grid; place-items: center; }
-.r-art svg { display: block; width: min(100%, 50svh * 4 / 3); height: auto; aspect-ratio: 4 / 3; border: 3px solid var(--line); border-radius: 18px; background: #fff; }
-.r-text { max-width: 34em; width: 100%; max-height: 100%; overflow-y: auto; font-family: var(--body); font-size: clamp(1.2rem, 2.4vw + .6rem, 1.75rem); line-height: 1.75; margin: 0; text-wrap: pretty; }
-.r-text p { margin: 0 0 .4em; }
+/* 읽기 화면: 16:9 무대 하나에 그림을 가득 채우고 글은 그림 위쪽 하늘 자리에 얹는다. 세로로 들고 있으면 무대를 90도 돌려 가로로 보여 준다 */
+#reader { position: fixed; inset: 0; z-index: 22; background: #1d2433; overflow: hidden; }
+.r-rot { position: absolute; inset: 0; display: grid; place-items: center; container-type: size; }
+@media (orientation: portrait) {
+  .r-rot { inset: auto; top: 0; left: 100%; width: 100vh; width: 100dvh; height: 100vw; transform: rotate(90deg); transform-origin: top left; }
+}
+.r-stage { position: relative; width: min(100cqw, 100cqh * 16 / 9); aspect-ratio: 16 / 9; container-type: size; overflow: hidden; background: #fff8ea; }
+.r-art { position: absolute; inset: 0; cursor: pointer; }
+.r-art svg { display: block; width: 100%; height: 100%; }
+.r-text { position: absolute; top: 3cqh; left: 50%; transform: translateX(-50%); width: 74cqw; max-height: 47cqh; overflow-y: auto; box-sizing: border-box; padding: 2.2cqh 3cqw; background: rgba(255, 250, 238, .9); border: .5cqh solid rgba(35, 57, 91, .85); border-radius: 3cqh; box-shadow: 0 1cqh 3cqh rgba(35, 57, 91, .18); font-family: var(--body); font-size: 4.3cqh; line-height: 1.55; color: var(--ink); text-wrap: pretty; }
+#reader.big .r-text { font-size: 5.3cqh; max-height: 58cqh; }
+.r-text p { margin: 0 0 .3em; }
+.r-text p:last-child { margin-bottom: 0; }
 .r-text q { quotes: "“" "”"; font-weight: 700; }
-#reader.big .r-text { font-size: clamp(1.45rem, 3vw + .7rem, 2.2rem); }
-.r-text h2 { font-family: var(--display); font-weight: 400; font-size: 1.6em; margin: 0 0 .2em; text-align: center; }
-.r-text .by { text-align: center; font-size: .8em; }
-.r-text ol { margin: .2em 0 0; padding-left: 1.3em; font-size: .9em; }
-.r-num { font-family: var(--display); font-size: 1.125rem; font-variant-numeric: tabular-nums; }
-@media (orientation: landscape) and (min-width: 700px) {
-  .r-page { grid-template-rows: minmax(0, 1fr); grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; align-content: stretch; align-items: center; }
-  .r-art { height: 100%; container-type: size; }
-  .r-art svg { width: min(100cqw, 100cqh * 4 / 3); }
-  .r-text { align-self: center; }
-}
-@media (orientation: landscape) and (max-height: 620px) {
-  .r-text { font-size: clamp(1rem, 1.3vw + .55rem, 1.35rem); line-height: 1.65; }
-  #reader.big .r-text { font-size: clamp(1.15rem, 1.6vw + .6rem, 1.6rem); }
-}
+.r-text h2 { font-family: var(--display); font-weight: 400; font-size: 2em; margin: 0; text-align: center; line-height: 1.25; }
+.r-text .by { text-align: center; font-size: .85em; }
+.r-text ol { margin: .2em 0 0; padding-left: 1.3em; font-size: .92em; }
+.r-ic { position: absolute; top: 3cqh; width: 10cqh; height: 10cqh; border-radius: 50%; border: .5cqh solid var(--line); background: var(--paper); color: var(--ink); font-family: var(--display); font-size: 4.2cqh; cursor: pointer; display: grid; place-items: center; padding: 0; }
+#rClose { left: 2cqw; } #rSize { right: 2cqw; }
+#rSize[aria-pressed="true"] { background: var(--sun); }
+.r-nav { position: absolute; bottom: 4cqh; width: 15cqh; height: 15cqh; border-radius: 50%; border: .6cqh solid var(--line); background: var(--sun); color: var(--ink); font-family: var(--display); font-size: 8cqh; line-height: 1; cursor: pointer; display: grid; place-items: center; padding: 0 0 1cqh; box-shadow: 0 .8cqh 0 var(--line); }
+.r-nav.prev { left: 2cqw; } .r-nav.next { right: 2cqw; }
+.r-nav[disabled] { opacity: 0; pointer-events: none; }
+.r-num { position: absolute; bottom: 3cqh; left: 50%; transform: translateX(-50%); font-family: var(--display); font-size: 3.6cqh; background: rgba(255, 250, 238, .85); border-radius: 999px; padding: .3cqh 2.4cqh; font-variant-numeric: tabular-nums; }
+.r-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .who { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle; font-family: var(--display); font-size: .8em; background: var(--sun); border: 2px solid var(--line); border-radius: 999px; padding: 1px 10px 1px 2px; margin-right: 6px; }
 .who img, .who span { width: 1.7em; height: 1.7em; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: var(--paper); }
 #cast { position: fixed; inset: 0; z-index: 21; background: var(--sky); overflow-y: auto; }
@@ -178,20 +176,16 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
 <input type="file" id="facePick" accept="image/*" capture="user" hidden>
 
 <div id="reader" role="dialog" aria-modal="true" aria-labelledby="rTitle" hidden>
-  <div class="r-top">
-    <button class="r-btn" type="button" id="rClose">닫기</button>
-    <b id="rTitle"></b>
-    <button class="r-btn" type="button" id="rSize" aria-pressed="false" aria-label="글자 크게">가<small>+</small></button>
-  </div>
-  <div class="r-page">
+  <div class="r-rot"><div class="r-stage">
+    <b id="rTitle" class="r-sr"></b>
     <div class="r-art" id="rArt"></div>
     <div class="r-text" id="rText" aria-live="polite"></div>
-  </div>
-  <div class="r-bot">
-    <button class="r-btn big" type="button" id="rPrev" aria-label="이전 쪽">‹ 이전</button>
+    <button class="r-ic" type="button" id="rClose" aria-label="닫기">✕</button>
+    <button class="r-ic" type="button" id="rSize" aria-pressed="false" aria-label="글자 크게">가+</button>
+    <button class="r-nav prev" type="button" id="rPrev" aria-label="이전 쪽">‹</button>
     <span class="r-num" id="rNum"></span>
-    <button class="r-btn big" type="button" id="rNext" aria-label="다음 쪽">다음 ›</button>
-  </div>
+    <button class="r-nav next" type="button" id="rNext" aria-label="다음 쪽">›</button>
+  </div></div>
 </div>
 
 <div class="page" id="home" hidden>
@@ -1066,10 +1060,15 @@ cv.addEventListener('pointermove', e => {
 const ART = (() => {
   const faces = {}; let fid = 0;
   /* 사진 얼굴: 머리 원 안에 사진을 넣고, 뒤집힌 캐릭터라도 사진은 원래 방향으로 보이게 한다 */
-  const photo = (k, cx, cy, r, f) => {
+  const photo = (k, cx, cy, r, f, fur, edge) => {
     if (!faces[k]) return '';
-    const id = 'fc' + (++fid);
-    return `<g transform="${f < 0 ? `translate(${2 * cx},0) scale(-1,1)` : ''}"><clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath><image href="${faces[k]}" x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id})"/><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#fff" stroke-width="3"/></g>`;
+    const id = 'fc' + (++fid), fr = r * .8;
+    return `<defs><radialGradient id="${id}g"><stop offset=".7" stop-color="#fff"/><stop offset="1" stop-color="#000"/></radialGradient>
+      <mask id="${id}m" maskContentUnits="userSpaceOnUse"><circle cx="${cx}" cy="${cy}" r="${fr}" fill="url(#${id}g)"/></mask>
+      <filter id="${id}f" color-interpolation-filters="sRGB"><feColorMatrix type="saturate" values=".78"/><feComponentTransfer><feFuncR type="linear" slope="1.04" intercept=".04"/><feFuncG type="linear" slope="1" intercept=".02"/><feFuncB type="linear" slope=".88" intercept=".01"/></feComponentTransfer></filter></defs>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="${fur}" ${edge ? `stroke="${edge}" stroke-width="2"` : ''}/>
+      <g transform="${f < 0 ? `translate(${2 * cx},0) scale(-1,1)` : ''}"><image href="${faces[k]}" x="${cx - fr}" y="${cy - fr}" width="${2 * fr}" height="${2 * fr}" preserveAspectRatio="xMidYMid slice" mask="url(#${id}m)" filter="url(#${id}f)"/></g>
+      <ellipse cx="${cx - fr * .52}" cy="${cy + fr * .38}" rx="${fr * .2}" ry="${fr * .12}" fill="#f4a9b8" opacity=".38"/><ellipse cx="${cx + fr * .52}" cy="${cy + fr * .38}" rx="${fr * .2}" ry="${fr * .12}" fill="#f4a9b8" opacity=".38"/>`;
   };
   const C = { fur: '#c47a3c', furD: '#9a5a26', belly: '#f6dcb4', ink: '#3b2314', bunny: '#fbf7f2', bunnyL: '#d9cfc4', pink: '#f4a9b8', bear: '#8a5a3b', bearL: '#d9b08c' };
   const face = (ex, ey, mood, dir = 1) => {
@@ -1094,7 +1093,7 @@ const ART = (() => {
       <ellipse cx="11" cy="-25" rx="12" ry="18" fill="${C.belly}"/>
       <ellipse cx="-6" cy="-3" rx="10" ry="5" fill="${C.furD}"/><ellipse cx="16" cy="-3" rx="10" ry="5" fill="${C.furD}"/>
       <path d="M-2,-82 L1,-101 L11,-86 Z" fill="${C.furD}"/><path d="M16,-87 L24,-103 L29,-84 Z" fill="${C.furD}"/>
-      ${faces.D ? photo('D', 12, -68, 24, f) : `<circle cx="12" cy="-68" r="21" fill="${C.fur}"/>
+      ${faces.D ? photo('D', 12, -68, 27, f, C.fur) : `<circle cx="12" cy="-68" r="21" fill="${C.fur}"/>
       <ellipse cx="25" cy="-61" rx="${o.cheeks ? 13 : 9}" ry="${o.cheeks ? 11 : 7}" fill="${C.belly}"/>
       <circle cx="33" cy="-64" r="3" fill="${C.ink}"/>
       ${face(17, -72, m)}
@@ -1109,7 +1108,7 @@ const ART = (() => {
       <ellipse cx="0" cy="-28" rx="21" ry="27" fill="${C.bunny}" stroke="${C.bunnyL}" stroke-width="2"/>
       <g transform="rotate(${o.ears || -8} -2 -84)"><ellipse cx="-2" cy="-104" rx="7" ry="23" fill="${C.bunny}" stroke="${C.bunnyL}" stroke-width="2"/><ellipse cx="-2" cy="-104" rx="3" ry="16" fill="${C.pink}"/></g>
       <g transform="rotate(12 10 -84)"><ellipse cx="10" cy="-104" rx="7" ry="23" fill="${C.bunny}" stroke="${C.bunnyL}" stroke-width="2"/><ellipse cx="10" cy="-104" rx="3" ry="16" fill="${C.pink}"/></g>
-      ${faces.T ? photo('T', 5, -66, 22, f) : `<circle cx="5" cy="-66" r="19" fill="${C.bunny}" stroke="${C.bunnyL}" stroke-width="2"/>
+      ${faces.T ? photo('T', 5, -66, 25, f, C.bunny, C.bunnyL) : `<circle cx="5" cy="-66" r="19" fill="${C.bunny}" stroke="${C.bunnyL}" stroke-width="2"/>
       ${face(12, -70, m)}
       <ellipse cx="21" cy="-63" rx="3" ry="2.2" fill="${C.pink}"/>
       ${mouth(19, -56, m)}`}
@@ -1125,7 +1124,7 @@ const ART = (() => {
       <ellipse cx="-13" cy="-3" rx="13" ry="6" fill="${C.bear}"/><ellipse cx="17" cy="-3" rx="13" ry="6" fill="${C.bear}"/>
       <circle cx="-14" cy="-100" r="9" fill="${C.bear}"/><circle cx="22" cy="-100" r="9" fill="${C.bear}"/>
       <circle cx="-14" cy="-100" r="4" fill="${C.bearL}"/><circle cx="22" cy="-100" r="4" fill="${C.bearL}"/>
-      ${faces.G ? photo('G', 4, -82, 27, f) : `<circle cx="4" cy="-82" r="25" fill="${C.bear}"/>
+      ${faces.G ? photo('G', 4, -82, 30, f, C.bear) : `<circle cx="4" cy="-82" r="25" fill="${C.bear}"/>
       <ellipse cx="12" cy="-73" rx="12" ry="9" fill="${C.bearL}"/>
       <ellipse cx="14" cy="-78" rx="4.5" ry="3.2" fill="${C.ink}"/>
       ${face(-2, -88, m)}${face(20, -90, m)}
@@ -1143,12 +1142,12 @@ const ART = (() => {
     <ellipse cx="110" cy="70" rx="70" ry="40" fill="${snow ? '#e8f0fb' : '#e8913b'}"/><ellipse cx="290" cy="68" rx="72" ry="42" fill="${snow ? '#edf3fc' : '#c9622a'}"/>
     <ellipse cx="200" cy="150" rx="18" ry="24" fill="#3e2615"/>`;
   const sky = (top, bot, ground, gy = 230) => `<defs><linearGradient id="sk${top.slice(1)}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${top}"/><stop offset="1" stop-color="${bot}"/></linearGradient></defs>
-    <rect width="400" height="300" fill="url(#sk${top.slice(1)})"/><path d="M0,${gy} Q100,${gy - 14} 200,${gy} T400,${gy} V300 H0 Z" fill="${ground}"/>`;
+    <rect x="-200" y="-150" width="800" height="500" fill="url(#sk${top.slice(1)})"/><path d="M-200,${gy} Q-100,${gy + 12} 0,${gy} T200,${gy} T400,${gy} T600,${gy} V340 H-200 Z" fill="${ground}"/>`;
   const leaves = () => [[60, 40], [330, 30], [280, 110], [120, 120], [360, 160]].map(([a, b], i) => `<ellipse cx="${a}" cy="${b}" rx="6" ry="3" fill="${i % 2 ? '#e8913b' : '#c9622a'}" transform="rotate(${i * 40} ${a} ${b})"/>`).join('');
-  const snowfall = (n = 26) => { let o = '<g class="snow">'; for (let i = 0; i < n; i++) { const x = (i * 53) % 400, r = 2 + (i % 3), d = 4 + (i % 5); o += `<circle cx="${x}" cy="${(i * 37) % 300}" r="${r}" fill="#fff" opacity=".9" style="animation-duration:${d}s;animation-delay:-${(i * 0.7) % d}s"/>`; } return o + '</g>'; };
-  const autumn = () => sky('#ffe3b0', '#fff4dc', '#e2b05f');
-  const winter = () => sky('#cfe4fb', '#eef5ff', '#ffffff');
-  const wrap = (body, label) => `<svg viewBox="0 0 400 300" role="img" aria-label="${label}" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
+  const snowfall = (n = 26) => { let o = '<g class="snow">'; for (let i = 0; i < n; i++) { const x = (i * 53) % 640 - 120, r = 2 + (i % 3), d = 4 + (i % 5); o += `<circle cx="${x}" cy="${(i * 37) % 300}" r="${r}" fill="#fff" opacity=".9" style="animation-duration:${d}s;animation-delay:-${(i * 0.7) % d}s"/>`; } return o + '</g>'; };
+  const autumn = () => sky('#ffe3b0', '#fff4dc', '#e2b05f') + tree(-70, 232, 1.05) + tree(470, 232, 1.1);
+  const winter = () => sky('#cfe4fb', '#eef5ff', '#ffffff') + tree(-70, 236, 1.05, true) + tree(470, 236, 1.1, true);
+  const wrap = (body, label) => `<svg viewBox="-110 -60 620 349" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${label}" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
   return { faces, squirrel, bunny, bear, tree, oak, acorn, pile, leaves, snowfall, autumn, winter, sky, wrap };
 })();
 
@@ -1163,13 +1162,13 @@ const TALES = [
       { text: ['[D는] 볼이 빵빵해지도록 도토리를 물고 와서, 커다란 참나무 아래 땅속에 꼭꼭 묻었어요.', '하나, 둘, 셋… 묻은 도토리가 백 개도 넘었어요.'], art: A => A.wrap(A.autumn() + A.oak() + A.pile(110, 262, 6, 1.1) + `<path d="M250,250 q15,-12 30,0" fill="#a9763a"/>` + A.squirrel(300, 262, 1.15, { cheeks: true, mood: 'joy' }), '참나무 아래에 도토리를 묻는 볼이 빵빵한 다람이') },
       { text: ['그때 [T*가] 깡충깡충 다가왔어요.', '<q data-s="T">[D야], 우리 할머니가 아프셔. 도토리 몇 개만 나눠 줄 수 있니?</q>', '[D는] 고개를 휙 돌렸어요. <q data-s="D">안 돼. 이건 다 내 거야.</q>'], art: A => A.wrap(A.autumn() + A.tree(60, 232, .9) + A.pile(190, 246, 8, 1.1) + A.squirrel(250, 250, 1.2, { flip: true, mood: 'pout' }) + A.bunny(110, 250, 1.15, { mood: 'sad' }), '부탁하는 토끼 토순이와 고개를 돌린 다람이') },
       { text: ['이번에는 [G*가] 배를 문지르며 왔어요.', '<q data-s="G">[D야], 나 배가 너무 고파. 하나만 줄래?</q>', '[D는] 도토리를 등 뒤로 숨겼어요. <q data-s="D">싫어! 너희가 직접 모아.</q>', '[T와] [G는] 시무룩하게 돌아갔어요.'], art: A => A.wrap(A.autumn() + A.tree(350, 232, 1) + A.squirrel(270, 250, 1.15, { flip: true, mood: 'pout', hold: true }) + A.bear(130, 252, 1.15, { mood: 'sad', rub: true }) + A.bunny(55, 252, .8, { mood: 'sad' }), '배고픈 아기곰 곰곰이와 도토리를 숨기는 다람이') },
-      { text: ['그날 밤, 하늘에서 하얀 눈이 펑펑 쏟아졌어요.', '눈은 밤새도록 내려서 숲을 온통 하얗게 덮어 버렸어요.'], art: A => A.wrap(A.sky('#24345f', '#44589a', '#eef4ff', 236) + `<circle cx="330" cy="60" r="22" fill="#fff6c8"/><circle cx="321" cy="54" r="22" fill="#2c3d6c"/>` + A.tree(80, 240, 1.1, true) + A.tree(220, 240, 1.3, true) + A.tree(350, 240, .9, true) + A.snowfall(), '눈이 펑펑 내리는 밤의 숲') },
+      { text: ['그날 밤, 하늘에서 하얀 눈이 펑펑 쏟아졌어요.', '눈은 밤새도록 내려서 숲을 온통 하얗게 덮어 버렸어요.'], art: A => A.wrap(A.sky('#24345f', '#44589a', '#eef4ff', 236) + `<circle cx="330" cy="60" r="22" fill="#fff6c8"/><circle cx="321" cy="54" r="22" fill="#2c3d6c"/>` + A.tree(80, 240, 1.1, true) + A.tree(220, 240, 1.3, true) + A.tree(350, 240, .9, true) + A.snowfall(40), '눈이 펑펑 내리는 밤의 숲') },
       { text: ['아침에 일어난 [D는] 깜짝 놀랐어요. 도토리를 어디에 묻었는지 하나도 기억나지 않았거든요.', '<q data-s="D">어떡해, 내 도토리가 다 사라졌어!</q>', '[D는] 혼자 눈을 파고 또 팠지만, 작은 앞발은 금세 꽁꽁 얼어 버렸어요.'], art: A => A.wrap(A.winter() + A.oak(true) + `<ellipse cx="290" cy="262" rx="30" ry="8" fill="#dfe8f5"/><ellipse cx="110" cy="258" rx="22" ry="6" fill="#dfe8f5"/>` + A.squirrel(300, 262, 1.15, { mood: 'sad' }), '눈 덮인 참나무 아래에서 도토리를 찾지 못한 다람이') },
       { text: ['[D는] 눈 위에 털썩 주저앉아 훌쩍훌쩍 울었어요.', '그때 뒤에서 목소리가 들렸어요. <q data-s="T">[D야], 왜 울고 있니?</q>', '[T와] [G였]어요.'], art: A => A.wrap(A.winter() + A.tree(60, 236, 1, true) + A.tree(360, 236, .9, true) + A.squirrel(250, 252, 1.15, { flip: true, mood: 'cry' }) + A.bunny(150, 252, 1.05, { mood: 'happy' }) + A.bear(90, 254, 1, { mood: 'happy' }), '우는 다람이에게 다가온 토순이와 곰곰이') },
       { text: ['[D는] 부끄러워서 고개를 푹 숙였어요.', '<q data-s="D">어제 너희한테 하나도 안 나눠 줬는데… 그런데도 와 준 거야?</q>', '[G가] 웃으며 말했어요. <q data-s="G">친구가 울고 있는데 어떻게 그냥 가?</q>'], art: A => A.wrap(A.winter() + A.tree(355, 236, 1, true) + A.squirrel(260, 252, 1.2, { flip: true, mood: 'shy' }) + A.bear(150, 254, 1.15, { mood: 'joy' }) + A.bunny(70, 252, .95, { mood: 'happy' }), '부끄러워하는 다람이와 웃는 곰곰이') },
       { text: ['[G는] 커다란 앞발로 눈을 쓱쓱 치우고, [T는] 기다란 귀를 쫑긋 세워 땅속 소리를 들었어요.', '<q data-s="T">여기야! 여기서 도토리가 데구루루 구르는 소리가 나!</q>', '셋이 함께 파자 도토리가 우르르 쏟아져 나왔어요.'], art: A => A.wrap(A.winter() + A.oak(true) + `<ellipse cx="200" cy="262" rx="62" ry="14" fill="#a9763a"/>` + A.pile(200, 262, 12, 1.1) + A.bear(95, 262, 1, { mood: 'joy' }) + A.bunny(300, 262, .95, { mood: 'joy', ears: -2, flip: true }) + A.squirrel(200, 218, .8, { mood: 'joy' }), '셋이 함께 눈을 파서 도토리를 찾은 장면') },
       { text: ['[D는] 도토리를 세 무더기로 똑같이 나누었어요.', '<q data-s="D">이건 [T] 할머니 거, 이건 [G] 거, 그리고 이건 내 거야.</q>', '[T와] [G의] 눈이 동그래졌어요.'], art: A => A.wrap(A.winter() + A.pile(95, 268, 6, 1.1) + A.pile(200, 268, 6, 1.1) + A.pile(305, 268, 6, 1.1) + A.bear(70, 228, .75, { mood: 'happy' }) + A.squirrel(200, 228, .8, { mood: 'joy' }) + A.bunny(330, 228, .75, { mood: 'happy', flip: true }), '똑같이 나눈 세 개의 도토리 더미') },
-      { text: ['그날 저녁, 셋은 [D]네 나무 구멍에 모여 따끈한 도토리죽을 나눠 먹었어요.', '혼자 먹을 때보다 훨씬, 훨씬 맛있었어요.', '[D는] 생각했어요. <q data-s="D">나누면 줄어드는 게 아니라 더 커지는구나.</q>'], art: A => A.wrap(`<rect width="400" height="300" fill="#5a3520"/><ellipse cx="200" cy="150" rx="185" ry="140" fill="#7a4b2a"/><ellipse cx="200" cy="160" rx="160" ry="118" fill="#f2c27a" opacity=".35"/><rect x="0" y="240" width="400" height="60" fill="#6b3f22"/><ellipse cx="200" cy="246" rx="60" ry="14" fill="#c9893f"/><path d="M178,236 q22,14 44,0 v-14 h-44z" fill="#e8e1d6"/><ellipse cx="200" cy="222" rx="22" ry="6" fill="#c8954f"/><path d="M190,212 q4,-10 0,-18 M206,212 q4,-10 0,-18" stroke="#fff" stroke-width="2.5" fill="none" opacity=".8"/>` + A.bear(95, 262, 1, { mood: 'joy' }) + A.squirrel(200, 190, .7, { mood: 'joy' }) + A.bunny(305, 262, .95, { mood: 'joy', flip: true }), '나무 구멍 안에서 도토리죽을 나눠 먹는 세 친구') },
+      { text: ['그날 저녁, 셋은 [D]네 나무 구멍에 모여 따끈한 도토리죽을 나눠 먹었어요.', '혼자 먹을 때보다 훨씬, 훨씬 맛있었어요.', '[D는] 생각했어요. <q data-s="D">나누면 줄어드는 게 아니라 더 커지는구나.</q>'], art: A => A.wrap(`<rect x="-200" y="-150" width="800" height="500" fill="#5a3520"/><ellipse cx="200" cy="120" rx="290" ry="190" fill="#7a4b2a"/><ellipse cx="200" cy="140" rx="250" ry="160" fill="#f2c27a" opacity=".35"/><circle cx="440" cy="150" r="30" fill="#9cc3ea" stroke="#5a3520" stroke-width="8"/><circle cx="450" cy="142" r="3" fill="#fff"/><circle cx="430" cy="160" r="2" fill="#fff"/><rect x="-200" y="240" width="800" height="110" fill="#6b3f22"/><ellipse cx="200" cy="246" rx="60" ry="14" fill="#c9893f"/><path d="M178,236 q22,14 44,0 v-14 h-44z" fill="#e8e1d6"/><ellipse cx="200" cy="222" rx="22" ry="6" fill="#c8954f"/><path d="M190,212 q4,-10 0,-18 M206,212 q4,-10 0,-18" stroke="#fff" stroke-width="2.5" fill="none" opacity=".8"/>` + A.bear(95, 262, 1, { mood: 'joy' }) + A.squirrel(200, 190, .7, { mood: 'joy' }) + A.bunny(305, 262, .95, { mood: 'joy', flip: true }), '나무 구멍 안에서 도토리죽을 나눠 먹는 세 친구') },
       { end: true, text: ['<h2>끝</h2>', '<p><b>함께 이야기해요</b></p>', '<ol><li>[D는] 왜 처음에 도토리를 나눠 주지 않았을까요?</li><li>[T와] [G는] 왜 [D를] 도와주었을까요?</li><li>우리는 친구와 무엇을 나눌 수 있을까요?</li></ol>'], art: A => A.wrap(A.autumn() + A.tree(60, 232, 1) + A.tree(345, 232, 1.05) + A.leaves() + A.bear(130, 252, 1, { mood: 'joy' }) + A.squirrel(205, 252, 1.05, { mood: 'joy', hold: true }) + A.bunny(275, 252, .95, { mood: 'joy', flip: true }), '나란히 웃고 있는 세 친구') }
     ]
   }
@@ -1239,10 +1238,11 @@ function showPage() {
     });
   $t('rNum').textContent = (tp + 1) + ' / ' + tale.pages.length;
   $t('rPrev').disabled = tp === 0;
-  $t('rNext').textContent = tp === tale.pages.length - 1 ? '처음부터' : '다음 ›';
+  $t('rNext').textContent = tp === tale.pages.length - 1 ? '↺' : '›';
+  $t('rText').scrollTop = 0;
   $t('rNext').setAttribute('aria-label', tp === tale.pages.length - 1 ? '처음부터 다시 읽기' : '다음 쪽');
 }
-function openTale(t) { tale = t; tp = 0; applyFaces(t); $t('rTitle').textContent = fillNames(t.pages[0].text[0].replace(/<[^>]+>/g, ''), t, castOf(t).names); $t('reader').hidden = false; showPage(); $t('rNext').focus(); }
+function openTale(t) { tale = t; tp = 0; applyFaces(t); $t('rTitle').textContent = fillNames(t.pages[0].text[0].replace(/<[^>]+>/g, ''), t, castOf(t).names); $t('reader').hidden = false; readerLandscape(true); showPage(); $t('rNext').focus(); }
 function turn(d) {
   if (!tale) return;
   if (d > 0 && tp === tale.pages.length - 1) tp = 0; else tp = Math.max(0, Math.min(tale.pages.length - 1, tp + d));
@@ -1251,13 +1251,25 @@ function turn(d) {
 $t('rNext').addEventListener('click', () => turn(1));
 $t('rPrev').addEventListener('click', () => turn(-1));
 $t('rArt').addEventListener('click', () => turn(1));
-$t('rClose').addEventListener('click', () => { $t('reader').hidden = true; tale = null; });
+function readerLandscape(on) {
+  try {
+    if (on) {
+      const el = document.documentElement, q = el.requestFullscreen && el.requestFullscreen({ navigationUI: 'hide' });
+      if (q) q.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape')).catch(() => {});
+    } else {
+      if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    }
+  } catch (e) {}
+}
+$t('rClose').addEventListener('click', () => { $t('reader').hidden = true; tale = null; readerLandscape(false); });
 $t('rSize').addEventListener('click', () => { const on = $t('reader').classList.toggle('big'); $t('rSize').setAttribute('aria-pressed', String(on)); try { localStorage.setItem('kongkong-big', on ? '1' : ''); } catch (e) {} });
 try { if (localStorage.getItem('kongkong-big')) { $t('reader').classList.add('big'); $t('rSize').setAttribute('aria-pressed', 'true'); } } catch (e) {}
 document.addEventListener('keydown', e => { if ($t('reader').hidden) return; if (e.key === 'ArrowRight') turn(1); if (e.key === 'ArrowLeft') turn(-1); if (e.key === 'Escape') $t('rClose').click(); });
 let sx = null;
-$t('reader').addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
-$t('reader').addEventListener('touchend', e => { if (sx === null) return; const d = e.changedTouches[0].clientX - sx; if (Math.abs(d) > 60) turn(d < 0 ? 1 : -1); sx = null; });
+const turned = () => matchMedia('(orientation: portrait)').matches;
+$t('reader').addEventListener('touchstart', e => { sx = turned() ? e.touches[0].clientY : e.touches[0].clientX; }, { passive: true });
+$t('reader').addEventListener('touchend', e => { if (sx === null) return; const d = (turned() ? e.changedTouches[0].clientY : e.changedTouches[0].clientX) - sx; if (Math.abs(d) > 60) turn(d < 0 ? 1 : -1); sx = null; });
 /* 주인공 정하기 */
 let castTale = null, shootKey = null, camStream = null;
 function openCast(t) {
