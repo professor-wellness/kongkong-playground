@@ -1,0 +1,710 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}</style></head><body><title>콩콩 놀이터</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+/* Layout: 글을 못 읽는 아이도 누를 수 있는 큰 그림 카드 3장. 놀이는 전체 화면, 보호자 안내는 아래. 밝은 놀이방 한 가지 분위기로 고정한다. */
+:root {
+  color-scheme: light;
+  --sky: #bdeafe; --grass: #8fdc72; --sun: #ffcf3f; --berry: #ff6b8a; --ink: #23395b; --paper: #fffdf5; --line: #23395b;
+  --display: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --body: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+* { box-sizing: border-box; }
+body { background: var(--sky); color: var(--ink); font-family: var(--body); font-size: 1rem; line-height: 1.6; word-break: keep-all; overflow-wrap: anywhere; }
+.page { max-width: 760px; margin-inline: auto; padding-block: 24px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2.5rem, 12vw, 3.5rem); line-height: 1.1; margin: 0; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.stars { font-family: var(--display); font-size: 1.5rem; background: var(--paper); border: 3px solid var(--line); border-radius: 999px; padding: 2px 14px; white-space: nowrap; }
+.games { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+@media (min-width: 640px) { .games { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.game { font-family: var(--display); font-size: 1.625rem; color: var(--ink); background: var(--paper); border: 3px solid var(--line); border-radius: 20px; box-shadow: 0 6px 0 var(--line); padding: 14px; cursor: pointer; display: grid; justify-items: center; gap: 2px; }
+.game:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--line); }
+.game span { font-size: 4.25rem; line-height: 1.15; }
+.game:nth-child(1) { background: #ffe0e6; } .game:nth-child(2) { background: #fff1b8; } .game:nth-child(3) { background: #d8f5c9; } .game:nth-child(4) { background: #dcdcff; } .game:nth-child(5) { background: #d9f6f2; } .game:nth-child(6) { background: #ffe3c7; } .game:nth-child(7) { background: #f6dcc0; grid-column: 1 / -1; }
+button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
+.mode { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-family: var(--display); font-size: 1.125rem; }
+.mode button { font-family: var(--display); font-size: 1.125rem; color: var(--ink); background: var(--paper); border: 3px solid var(--line); border-radius: 999px; padding: 4px 16px; cursor: pointer; }
+.mode button[aria-pressed="true"] { background: var(--sun); }
+.mode small { flex-basis: 100%; font-family: var(--body); font-size: .9375rem; }
+#turn { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; background: var(--sky); text-align: center; padding: 16px; font-family: var(--display); font-size: 1.75rem; }
+#turn span { font-size: 5rem; line-height: 1; display: inline-block; animation: tilt 1.6s ease-in-out infinite; }
+@keyframes tilt { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+@media (prefers-reduced-motion: reduce) { #turn span { animation: none; } }
+.parent { background: var(--paper); border: 3px solid var(--line); border-radius: 16px; padding: 16px; }
+.parent h2 { font-family: var(--display); font-weight: 400; font-size: 1.25rem; margin: 0 0 6px; }
+.parent ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; }
+#play { position: fixed; inset: 0; z-index: 20; background: var(--sky); touch-action: none; user-select: none; -webkit-user-select: none; }
+#cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#vid { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.hud { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 10px); left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); display: flex; justify-content: space-between; align-items: center; gap: 8px; pointer-events: none; }
+.hud b { font-family: var(--display); font-weight: 400; font-size: 1.375rem; background: var(--paper); border: 3px solid var(--line); border-radius: 999px; padding: 0 14px; }
+#quit { pointer-events: auto; font-family: var(--display); font-size: 1.125rem; color: var(--ink); background: var(--paper); border: 3px solid var(--line); border-radius: 999px; padding: 4px 14px; cursor: pointer; }
+#say { position: absolute; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom, 0px) + 22px); margin: 0; text-align: center; font-family: var(--display); font-size: clamp(1.375rem, 6vw, 2rem); pointer-events: none; }
+#say span { background: var(--paper); border: 3px solid var(--line); border-radius: 16px; padding: 4px 14px; display: inline-block; }
+@media (orientation: landscape) and (max-height: 520px) { #say { bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); font-size: 1.25rem; } }
+#end { position: fixed; inset: 0; z-index: 30; background: var(--sun); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 14px; text-align: center; padding: 24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px)); }
+#endStars { font-size: clamp(3.5rem, 18vw, 5.5rem); line-height: 1; }
+#endText { font-family: var(--display); font-size: 2.25rem; margin: 0; }
+#end p { margin: 0; }
+.row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.row button { font-family: var(--display); font-size: 1.375rem; color: var(--ink); background: var(--paper); border: 3px solid var(--line); border-radius: 16px; padding: 8px 20px; cursor: pointer; }
+[hidden] { display: none !important; }
+</style>
+
+<div class="page" id="home">
+  <div class="top"><h1>콩콩 놀이터</h1><div class="stars" id="total" aria-label="모은 별">⭐ 0</div></div>
+  <div class="mode" role="group" aria-label="화면 방향">
+    <span>화면</span>
+    <button type="button" data-mode="portrait" aria-pressed="true">📱 세로</button>
+    <button type="button" data-mode="landscape" aria-pressed="false">📺 가로 (TV)</button>
+    <small id="modeHint">휴대폰으로 바로 할 때 쓰는 기본 화면입니다.</small>
+  </div>
+  <div class="games">
+    <button class="game" type="button" data-game="balloon"><span aria-hidden="true">🎈</span>풍선 팡팡</button>
+    <button class="game" type="button" data-game="balance"><span aria-hidden="true">🐣</span>황새 다리</button>
+    <button class="game" type="button" data-game="poses"><span aria-hidden="true">🦒</span>동물 따라쟁이</button>
+    <button class="game" type="button" data-game="step"><span aria-hidden="true">👣</span>콩콩 스텝</button>
+    <button class="game" type="button" data-game="trace"><span aria-hidden="true">🧘</span>자세 틀 따라 하기</button>
+    <button class="game" type="button" data-game="race"><span aria-hidden="true">🏎️</span>씽씽 레이싱</button>
+    <button class="game" type="button" data-game="hoop"><span aria-hidden="true">🏀</span>쏙쏙 농구</button>
+  </div>
+  <section class="parent" aria-labelledby="pTitle">
+    <h2 id="pTitle">보호자 안내</h2>
+    <ul>
+      <li>어른과 함께 넓고 미끄럽지 않은 곳에서 놀아 주세요.</li>
+      <li>휴대폰을 고정하고 2m쯤 떨어져 온몸이 보이게 서면 가장 잘 됩니다.</li>
+      <li>카메라 영상은 이 기기 안에서만 처리하고 저장하거나 전송하지 않습니다. 저장되는 것은 별 개수뿐입니다.</li>
+      <li>자세 틀 놀이는 한 발로 서는 자세가 있으니 어른이 곁에서 살펴 주세요. 틀과 몸이 겹치지 않아도 팔다리 방향이 맞으면 인정합니다.</li>
+      <li>TV로 크게 하려면 휴대폰 화면 미러링(삼성은 Smart View)을 켠 뒤 <b>가로 (TV)</b>를 고르고, 휴대폰을 옆으로 눕혀 TV 아래에 세워 주세요.</li>
+      <li>콩콩 스텝은 양말을 벗고 미끄럽지 않은 바닥에서 해 주세요.</li>
+      <li>놀이 한 판은 1분 안팎입니다. 몇 판 한 뒤에는 화면을 끄고 몸으로 놀아 주세요.</li>
+      <li>이 시안은 어린이 대상 정확도 시험 전이며, 발달 평가나 치료 도구가 아닙니다.</li>
+    </ul>
+  </section>
+</div>
+
+<div id="play" hidden>
+  <video id="vid" muted playsinline autoplay></video>
+  <canvas id="cv"></canvas>
+  <div class="hud"><b id="hudL"></b><b id="hudM" hidden>손가락 체험</b><button type="button" id="quit">그만</button></div>
+  <p id="say"><span id="sayText"></span></p>
+  <div id="turn" hidden><span aria-hidden="true">📱</span>휴대폰을 가로로 눕혀 주세요</div>
+</div>
+
+<div id="end" hidden>
+  <div id="endStars" aria-hidden="true"></div>
+  <p id="endText"></p>
+  <p id="endSub"></p>
+  <div class="row"><button type="button" id="again">한 번 더</button><button type="button" id="back">처음으로</button></div>
+</div>
+
+<script id="engine">
+function coverView(vw, vh, W, H) { const k = Math.max(W / vw, H / vh), dw = vw * k, dh = vh * k; return { dw, dh, ox: (W - dw) / 2, oy: (H - dh) / 2, W }; }
+function mapPoint(l, v) { return { x: v.W - (v.ox + l.x * v.dw), y: v.oy + l.y * v.dh }; }
+function torso(lm) { return Math.hypot((lm[11].x + lm[12].x - lm[23].x - lm[24].x) / 2, (lm[11].y + lm[12].y - lm[23].y - lm[24].y) / 2) || .001; }
+function fullBody(lm) { return !!lm && [0, 11, 12, 23, 24, 27, 28].every(i => lm[i].visibility > .4); }
+function upperBody(lm) { return !!lm && [11, 12, 15, 16].every(i => lm[i].visibility > .4); }
+function oneLeg(lm) { return Math.abs(lm[27].y - lm[28].y) / torso(lm) > .12; }
+/* 기린: 두 손 머리 위, 비행기: 양팔 옆으로, 개구리: 쪼그려 앉기 */
+const POSES = {
+  giraffe: lm => lm[15].y < lm[0].y && lm[16].y < lm[0].y,
+  plane: lm => { const t = torso(lm), sy = (lm[11].y + lm[12].y) / 2; return Math.abs(lm[15].y - sy) < t * .4 && Math.abs(lm[16].y - sy) < t * .4 && Math.abs(lm[15].x - lm[16].x) > Math.abs(lm[11].x - lm[12].x) * 2.2; },
+  frog: lm => ((lm[25].y + lm[26].y) / 2 - (lm[23].y + lm[24].y) / 2) < torso(lm) * .35
+};
+/* 콩콩 스텝: 거울 좌표 기준 발 상태. 한쪽으로 치우치면 좌우, 양쪽으로 벌리면 벌리기, 나머지는 모으기 */
+function footState(lx, rx, center, unit) {
+  const spread = Math.abs(lx - rx), off = (lx + rx) / 2 - center;
+  if (Math.abs(off) > unit * .4) return off < 0 ? 'left' : 'right';
+  return spread > unit * 1.4 ? 'both' : 'center';
+}
+function makeChart(n, rnd = Math.random) {
+  const out = []; let t = 2200, prev = 'center';
+  for (let i = 0; i < n; i++) {
+    const opts = ['center', 'both', 'left', 'right'].filter(k => k !== prev);
+    const kind = prev === 'center' ? opts[rnd() * opts.length | 0] : 'center';
+    out.push({ t, kind, done: false }); prev = kind;
+    t += Math.max(1300, 1800 - i * 25);
+  }
+  return out;
+}
+/* 자세 틀: 관절 방향(도)으로 정의. 0=위, 90=화면 오른쪽, 180=아래, 270=화면 왼쪽. 틀 그림과 판정이 같은 값을 쓴다 */
+const SEGS = [['aL', 11, 13], ['fL', 13, 15], ['aR', 12, 14], ['fR', 14, 16], ['tL', 23, 25], ['sL', 25, 27], ['tR', 24, 26], ['sR', 26, 28]];
+const SHAPES = [
+  { id: 'tree', name: '나무 자세', T: 0, aL: 335, fL: 25, aR: 25, fR: 335, tL: 245, sL: 125, tR: 180, sR: 180 },
+  { id: 'star', name: '반짝 별', T: 0, aL: 318, fL: 318, aR: 42, fR: 42, tL: 205, sL: 205, tR: 155, sR: 155 },
+  { id: 'plane', name: '비행기', T: 0, aL: 270, fL: 270, aR: 90, fR: 90, tL: 180, sL: 180, tR: 180, sR: 180 },
+  { id: 'warrior', name: '용감한 장군', T: 0, aL: 270, fL: 270, aR: 90, fR: 90, tL: 250, sL: 180, tR: 125, sR: 125 },
+  { id: 'squat', name: '의자에 앉은 척', side: true, T: 15, aL: 90, fL: 90, aR: 90, fR: 90, tL: 95, sL: 195, tR: 95, sR: 195 },
+  { id: 'lunge', name: '높이 뻗기', side: true, T: 350, aL: 15, fL: 15, aR: 15, fR: 15, tL: 262, sL: 180, tR: 118, sR: 118 },
+  { id: 'bend', name: '옆으로 기울이기', T: 340, aL: 200, fL: 190, aR: 10, fR: 325, tL: 188, sL: 188, tR: 172, sR: 172 },
+  { id: 'flamingo', name: '플라밍고', T: 0, aL: 270, fL: 270, aR: 90, fR: 90, tL: 235, sL: 170, tR: 180, sR: 180 },
+  { id: 'hero', name: '슈퍼 영웅', T: 0, aL: 235, fL: 125, aR: 125, fR: 235, tL: 195, sL: 195, tR: 165, sR: 165 },
+  { id: 'rocket', name: '로켓 발사', T: 0, aL: 350, fL: 5, aR: 10, fR: 355, tL: 180, sL: 180, tR: 180, sR: 180 }
+];
+const dirVec = d => [Math.sin(d * Math.PI / 180), -Math.cos(d * Math.PI / 180)];
+function shapeJoints(p) {
+  const hw = p.side ? .03 : .13, sw = p.side ? .03 : .22, tv = dirVec(p.T), sc = [tv[0] * .62, tv[1] * .62];
+  const J = { sc, hc: [0, 0], hL: [-hw, 0], hR: [hw, 0], sL: [sc[0] - sw, sc[1]], sR: [sc[0] + sw, sc[1]] };
+  const go = (a, d, l) => { const v = dirVec(d); return [a[0] + v[0] * l, a[1] + v[1] * l]; };
+  J.eL = go(J.sL, p.aL, .3); J.wL = go(J.eL, p.fL, .27); J.eR = go(J.sR, p.aR, .3); J.wR = go(J.eR, p.fR, .27);
+  J.kL = go(J.hL, p.tL, .42); J.aL = go(J.kL, p.sL, .42); J.kR = go(J.hR, p.tR, .42); J.aR = go(J.kR, p.sR, .42);
+  J.head = go(sc, p.T, .27);
+  return J;
+}
+const angDiff = (a, b) => { const d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+function userDirs(lm, aspect) {
+  const dir = (a, b) => { const dx = -(b.x - a.x) * aspect, dy = b.y - a.y; return (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360; };
+  const o = {};
+  SEGS.forEach(([k, a, b]) => { o[k] = dir(lm[a], lm[b]); });
+  const hip = { x: (lm[23].x + lm[24].x) / 2, y: (lm[23].y + lm[24].y) / 2 }, sh = { x: (lm[11].x + lm[12].x) / 2, y: (lm[11].y + lm[12].y) / 2 };
+  o.T = dir(hip, sh);
+  return o;
+}
+function variantOf(p, flip, swapLegs) {
+  const f = d => flip ? (360 - d) % 360 : d, o = { T: f(p.T) };
+  const L = flip ? 'R' : 'L', R = flip ? 'L' : 'R';
+  o.aL = f(p['a' + L]); o.fL = f(p['f' + L]); o.aR = f(p['a' + R]); o.fR = f(p['f' + R]);
+  const tl = f(p['t' + L]), sl = f(p['s' + L]), tr = f(p['t' + R]), sr = f(p['s' + R]);
+  o.tL = swapLegs ? tr : tl; o.sL = swapLegs ? sr : sl; o.tR = swapLegs ? tl : tr; o.sR = swapLegs ? sl : sr;
+  return o;
+}
+/* 좌우 반전까지 인정. 틀린 부위 이름을 돌려줘 화면에 표시한다 */
+function matchShape(lm, p, aspect, tol = 40) {
+  const u = userDirs(lm, aspect);
+  let best = null;
+  const opts = p.side ? [[0, 0], [0, 1], [1, 0], [1, 1]] : [[0, 0], [1, 0]];
+  for (const [fl, sw] of opts) {
+    const v = variantOf(p, !!fl, !!sw), bad = [];
+    SEGS.forEach(([k]) => { if (angDiff(u[k], v[k]) > tol) bad.push(k); });
+    if (angDiff(u.T, v.T) > 30) bad.push('T');
+    if (!best || bad.length < best.bad.length) best = { bad, ok: !bad.length };
+  }
+  return best;
+}
+/* 씽씽 레이싱: 화면에 보이는 양손을 잇는 선의 기울기가 핸들 각도. 오른손이 내려가면 시계 방향 */
+function steerAngle(lm, aspect) {
+  let dx = (lm[15].x - lm[16].x) * aspect, dy = lm[16].y - lm[15].y;
+  if (Math.hypot(dx, dy) < .05) return 0;
+  if (dx < 0) { dx = -dx; dy = -dy; }
+  return Math.atan2(dy, dx) * 180 / Math.PI;
+}
+function steerValue(deg) {
+  const a = Math.abs(deg);
+  if (a < 7) return 0;
+  return Math.sign(deg) * Math.min(1, (a - 7) / 28);
+}
+/* 쏙쏙 농구: 손을 내렸다가 머리 위로 올리면 슛. 그때 골반이 평소보다 올라가 있으면 점프 슛 */
+function bodyVisible(lm) { return !!lm && [0, 11, 12, 15, 16, 23, 24].every(i => lm[i].visibility > .4); }
+function shotStep(st, lm) {
+  const shY = (lm[11].y + lm[12].y) / 2, hipY = (lm[23].y + lm[24].y) / 2, handY = Math.max(lm[15].y, lm[16].y);
+  const torso = Math.abs(hipY - shY) || .1;
+  if (st.base === undefined) st.base = hipY;
+  if (!st.armed && lm[15].y > shY && lm[16].y > shY) st.armed = true;
+  if (st.armed) {
+    if (hipY > st.base - torso * .1) st.base += (hipY - st.base) * .12;
+    if (handY < lm[0].y) { st.armed = false; return { fire: true, jump: st.base - hipY > torso * .12 }; }
+  }
+  return { fire: false, jump: false };
+}
+function aimX(lm) { const x = 1 - (lm[23].x + lm[24].x) / 2; return Math.max(.12, Math.min(.88, .5 + (x - .5) * 2.2)); }
+function isBasket(ballX, hoopX, hoopW, jump) { return Math.abs(ballX - hoopX) <= hoopW * (jump ? .8 : .55); }
+function judge(ms) { const a = Math.abs(ms); return a <= 200 ? 2 : a <= 400 ? 1 : 0; }
+function starsFor(game, n) {
+  const c = { balloon: [5, 12, 20], balance: [3, 6, 10], poses: [1, 3, 5], step: [8, 18, 28], trace: [1, 3, 5], race: [5, 12, 20], hoop: [4, 10, 18] }[game];
+  return n >= c[2] ? 3 : n >= c[1] ? 2 : 1;
+}
+if (typeof module !== 'undefined') module.exports = { coverView, mapPoint, fullBody, upperBody, oneLeg, POSES, starsFor, footState, makeChart, judge, SHAPES, SEGS, shapeJoints, matchShape, userDirs, steerAngle, steerValue, bodyVisible, shotStep, aimX, isBasket };
+</script>
+
+<script>
+const $ = id => document.getElementById(id);
+const KEY = 'kongkong-stars-v1';
+let total = 0;
+try { total = Number(localStorage.getItem(KEY)) || 0; } catch (e) {}
+$('total').textContent = '⭐ ' + total;
+
+let audio = null;
+function beep(f, ms) {
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    audio.resume();
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.frequency.value = f; g.gain.value = .12; o.connect(g); g.connect(audio.destination);
+    o.start(); o.stop(audio.currentTime + ms / 1000);
+  } catch (e) {}
+}
+let lastSpoken = '';
+function say(t, voice = true) {
+  $('sayText').textContent = t; $('say').hidden = !t;
+  if (!voice || t === lastSpoken) return;
+  lastSpoken = t;
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; u.rate = 1; speechSynthesis.speak(u); } catch (e) {}
+}
+
+let posePromise = null, poseResult = null, loadStep = '카메라';
+function loadPose() {
+  if (posePromise) return posePromise;
+  posePromise = new Promise((res, rej) => {
+    const add = src => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error('script')); document.head.append(s); });
+    const urls = {};
+    loadStep = '자료 내려받기';
+    add('pose/pose_assets.js').then(() => { loadStep = '프로그램 불러오기'; return add('pose/pose.js'); }).then(async () => {
+      loadStep = '자료 풀기';
+      await new Promise(r => setTimeout(r, 30));
+      for (const [name, b64] of Object.entries(window.POSE_ASSETS)) {
+        const bin = atob(b64), bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        urls[name] = URL.createObjectURL(new Blob([bytes]));
+      }
+      const pose = new window.Pose({ locateFile: f => urls[f] || 'pose/' + f });
+      pose.setOptions({ modelComplexity: 0, smoothLandmarks: true, minDetectionConfidence: .5, minTrackingConfidence: .5 });
+      pose.onResults(r => { poseResult = r.poseLandmarks || null; });
+      loadStep = '인식 모델 시작';
+      await pose.initialize();
+      res(pose);
+    }).catch(rej);
+  });
+  posePromise.catch(() => { posePromise = null; });
+  return posePromise;
+}
+
+let G = null, current = null;
+const INTRO = { balloon: '손으로 풍선을 터트려요', balance: '한 발을 들고 알을 깨워요', poses: '동물을 따라 해 봐요', step: '화살표가 선에 닿을 때 콩콩 밟아요', trace: '초록 틀과 똑같이 자세를 잡아요', race: '두 손을 뻗어 핸들을 잡아요', hoop: '좌우로 움직여 골대에 맞추고 두 손을 번쩍 올려요' };
+const NEED = { balloon: upperBody, balance: fullBody, poses: fullBody, step: fullBody, trace: fullBody, race: upperBody, hoop: bodyVisible };
+const CARDS = [
+  { id: 'giraffe', e: '🦒', t: '기린처럼 두 손을 위로!' },
+  { id: 'plane', e: '✈️', t: '비행기처럼 팔을 쭉!' },
+  { id: 'frog', e: '🐸', t: '개구리처럼 쪼그려 앉아요!' }
+];
+
+async function start(game) {
+  current = game;
+  $('home').hidden = true; $('end').hidden = true; $('play').hidden = false;
+  $('hudL').textContent = ''; say('잠깐만 기다려요', false);
+  beep(660, 80);
+  const g = G = { game, cam: false, stream: null, pose: null, lm: null, phase: 'ready', t0: performance.now(), hold: 0, score: 0, items: [], sparks: [], last: performance.now(), down: null, seq: [], idx: 0, poseHold: 0, spawn: 0 };
+  const toTouch = why => {
+    if (g.stream) g.stream.getTracks().forEach(t => t.stop());
+    g.stream = null; g.cam = false; $('vid').srcObject = null;
+    $('hudM').hidden = false;
+    g.notice = why; g.phase = 'count'; g.t0 = performance.now() + (why ? 3500 : 0);
+  };
+  try {
+    g.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+  } catch (e) {
+    if (G !== g) return;
+    toTouch('');
+    requestAnimationFrame(frame);
+    return;
+  }
+  if (G !== g) { g.stream.getTracks().forEach(t => t.stop()); return; }
+  g.cam = true; g.phase = 'load'; g.t0 = performance.now();
+  $('vid').srcObject = g.stream;
+  $('vid').play().catch(() => {});
+  requestAnimationFrame(frame);
+  try {
+    const limit = ms => new Promise((_, no) => setTimeout(() => no(new Error('timeout')), ms));
+    g.pose = await Promise.race([loadPose(), limit(60000)]);
+    if (G !== g) return;
+    loadStep = '첫 인식';
+    const waitFrom = performance.now();
+    while (!$('vid').videoWidth && G === g) {
+      if (performance.now() - waitFrom > 15000) throw new Error('카메라 영상이 들어오지 않아요');
+      await new Promise(r => setTimeout(r, 100));
+    }
+    await Promise.race([g.pose.send({ image: $('vid') }), limit(30000)]);
+    if (G !== g) return;
+    g.lm = poseResult; g.phase = 'calib'; g.t0 = performance.now();
+    (async () => { while (G === g) { try { await g.pose.send({ image: $('vid') }); g.lm = poseResult; } catch (e) {} await new Promise(r => requestAnimationFrame(r)); } })();
+  } catch (e) {
+    if (G !== g) return;
+    toTouch('카메라 놀이 실패: ' + loadStep + ' 단계 (' + String(e && e.message || e).slice(0, 60) + ')');
+  }
+}
+function stop() {
+  const g = G; G = null;
+  if (g && g.stream) g.stream.getTracks().forEach(t => t.stop());
+  $('vid').srcObject = null; $('play').hidden = true;
+  try { speechSynthesis.cancel(); } catch (e) {}
+  lastSpoken = '';
+}
+function finish(n) {
+  const game = G.game, s = starsFor(game, n);
+  stop();
+  total += s;
+  try { localStorage.setItem(KEY, String(total)); } catch (e) {}
+  $('total').textContent = '⭐ ' + total;
+  $('endStars').textContent = '⭐'.repeat(s);
+  $('endText').textContent = '참 잘했어요!';
+  $('endSub').textContent = game === 'hoop' ? '농구 점수 ' + n + '점이에요' : game === 'race' ? '별 ' + n + '개를 모았어요' : game === 'trace' ? '자세 ' + n + '개를 해냈어요' : game === 'step' ? '콩콩 점수 ' + n + '점이에요' : game === 'balloon' ? '풍선 ' + n + '개를 터트렸어요' : game === 'balance' ? n.toFixed(0) + '초 동안 버텼어요' : '동물 ' + n + '마리를 따라 했어요';
+  $('end').hidden = false; $('again').focus();
+  [660, 880, 1175].forEach((f, i) => setTimeout(() => beep(f, 180), i * 160));
+  try { speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance('참 잘했어요'), { lang: 'ko-KR' })); } catch (e) {}
+}
+function burst(x, y) { for (let i = 0; i < 12; i++) { const a = i / 12 * 6.28; G.sparks.push({ x, y, dx: Math.cos(a) * 5, dy: Math.sin(a) * 5, life: 22 }); } }
+
+function frame(now) {
+  const g = G; if (!g) return;
+  const c = $('cv'), W = c.clientWidth, H = c.clientHeight, dpr = Math.min(devicePixelRatio || 1, 2);
+  if (c.width !== W * dpr) { c.width = W * dpr; c.height = H * dpr; }
+  const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const dt = now - g.last; g.last = now;
+  const v = $('vid');
+  let view = null, hands = [];
+  if (g.cam && v.videoWidth) {
+    view = coverView(v.videoWidth, v.videoHeight, W, H);
+    x.save(); x.translate(W, 0); x.scale(-1, 1); x.drawImage(v, view.ox, view.oy, view.dw, view.dh); x.restore();
+    if (g.lm) [15, 16, 19, 20].forEach(i => { if (g.lm[i].visibility > .3) hands.push(mapPoint(g.lm[i], view)); });
+  } else {
+    x.fillStyle = '#bdeafe'; x.fillRect(0, 0, W, H);
+    x.fillStyle = '#8fdc72'; x.fillRect(0, H * .8, W, H * .2);
+  }
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  hands.forEach(p => { x.font = '34px serif'; x.fillText('✋', p.x, p.y); });
+
+  const needTurn = screenMode === 'landscape' && H > W && (g.phase === 'calib' || g.phase === 'count');
+  $('turn').hidden = !needTurn;
+  if (needTurn) {
+    say('', false); g.t0 = now; g.calibOk = null;
+  } else if (g.phase === 'load') {
+    say('놀이 준비 중 ' + Math.floor((now - g.t0) / 1000) + '초 · ' + loadStep, false);
+  } else if (g.notice && now < g.t0) {
+    say(g.notice, false);
+  } else if (g.phase === 'calib') {
+    const ok = NEED[g.game](g.lm);
+    say(ok ? '좋아요, 그대로 있어요' : (g.game === 'balloon' || g.game === 'race' ? '뒤로 가서 두 손을 보여 주세요' : g.game === 'hoop' ? '뒤로 가서 허리까지 보여 주세요' : '뒤로 가서 온몸을 보여 주세요'));
+    if (ok) { g.calibOk = g.calibOk ?? now; if (now - g.calibOk > 1200) { g.phase = 'count'; g.t0 = now; } } else g.calibOk = null;
+  } else if (g.phase === 'count') {
+    const left = 3 - Math.floor((now - g.t0) / 1000);
+    if (left > 0) { say(INTRO[g.game]); x.font = '120px Jua, sans-serif'; x.fillStyle = '#23395b'; x.fillText(left, W / 2, H * .42); }
+    else {
+      g.phase = 'play'; g.t0 = now; beep(880, 200);
+      if (g.game === 'poses') { g.seq = Array.from({ length: 5 }, (_, i) => CARDS[i % 3]).sort(() => Math.random() - .5); }
+      if (g.game === 'trace') { g.seq = [...SHAPES].sort(() => Math.random() - .5).slice(0, 5); g.idx = 0; g.mode = 'ready'; g.modeT = now; g.hold = 0; g.miss = 0; g.okMs = 0; }
+      if (g.game === 'hoop') { g.shot = {}; g.ball = null; g.px2 = .5; g.score = 0; g.msg = null; }
+      if (g.game === 'race') { g.carX = .5; g.steer = 0; g.road = 0; g.items = []; g.spawn = now + 600; g.crash = 0; g.score = 0; }
+      if (g.game === 'step') {
+        g.chart = makeChart(20); g.taps = {}; g.flash = null; g.prevState = 'center';
+        if (g.cam && g.lm) { g.center = 1 - (g.lm[27].x + g.lm[28].x) / 2; g.unit = Math.abs(g.lm[11].x - g.lm[12].x) || .1; }
+      }
+    }
+  } else if (g.phase === 'play') playFrame(g, x, now, dt, W, H, hands, view);
+
+  g.sparks = g.sparks.filter(s => s.life-- > 0);
+  x.fillStyle = '#ffcf3f'; g.sparks.forEach(s => { s.x += s.dx; s.y += s.dy; x.fillRect(s.x, s.y, 8, 8); });
+  if (G === g) requestAnimationFrame(frame);
+}
+const FALL = 1800, KIND = { center: '두 발 모아요', both: '두 발 벌려요', left: '왼쪽으로 콩', right: '오른쪽으로 콩' };
+function stepState(g, now) {
+  if (g.cam) {
+    if (!g.lm || !fullBody(g.lm)) return null;
+    return footState(1 - g.lm[27].x, 1 - g.lm[28].x, g.center, g.unit);
+  }
+  const rec = k => now - (g.taps[k] ?? -1e9) < 400;
+  if (rec('left') && rec('right')) return 'both';
+  if (now - (g.taps.last ?? -1e9) > 400) return null;
+  return g.taps.lastKind;
+}
+function stepFrame(g, x, now, W, H) {
+  const t = now - g.t0, lineY = H * .72, lane = [W / 6, W / 2, W * 5 / 6], laneW = W / 3 - 8, state = stepState(g, now);
+  const lit = state === 'both' ? [0, 2] : state === 'left' ? [0] : state === 'right' ? [2] : state === 'center' ? [1] : [];
+  lane.forEach((lx, i) => {
+    x.fillStyle = lit.includes(i) ? 'rgba(255,207,63,.6)' : 'rgba(255,253,245,.35)';
+    x.fillRect(lx - laneW / 2, 60, laneW, H - 60);
+  });
+  x.fillStyle = '#ff6b8a'; x.fillRect(0, lineY - 5, W, 10);
+  const size = Math.min(W / 3.6, 92);
+  for (const n of g.chart) {
+    const d = n.t - t;
+    if (!n.beeped && d <= 0) { n.beeped = true; beep(n.kind === 'center' ? 520 : 780, 70); }
+    if (!n.done && d < -400) { n.done = true; g.combo = 0; g.flash = { t: now, text: '앗!' }; }
+    if (!n.done && Math.abs(d) <= 400 && state === n.kind) {
+      const q = judge(d); n.done = true;
+      g.score += q === 2 ? 2 : 1; g.combo = (g.combo || 0) + 1;
+      g.flash = { t: now, text: q === 2 ? '최고!' : '좋아요!' };
+      burst(n.kind === 'left' ? lane[0] : n.kind === 'right' ? lane[2] : lane[1], lineY); beep(990, 70);
+    }
+    if (n.done || d > FALL) continue;
+    const y = lineY - d / FALL * (lineY - 70);
+    x.font = size + 'px serif';
+    const draw = (lx, e) => x.fillText(e, lx, y);
+    if (n.kind === 'center') draw(lane[1], '🟡');
+    if (n.kind === 'left') draw(lane[0], '⬅️');
+    if (n.kind === 'right') draw(lane[2], '➡️');
+    if (n.kind === 'both') { draw(lane[0], '⬅️'); draw(lane[2], '➡️'); }
+  }
+  const next = g.chart.find(n => !n.done);
+  $('hudL').textContent = '👣 ' + g.score;
+  say(next ? KIND[next.kind] : '', false);
+  if (g.flash && now - g.flash.t < 500) { x.font = '48px Jua, sans-serif'; x.fillStyle = '#23395b'; x.fillText(g.flash.text, W / 2, H * .55); }
+  if (!next && t > g.chart[g.chart.length - 1].t + 800) finish(g.score);
+}
+const outlineCache = new Map();
+function outlineFor(p, W, H, dpr) {
+  const key = p.id + W + 'x' + H; if (outlineCache.has(key)) return outlineCache.get(key);
+  const c = document.createElement('canvas'); c.width = W * dpr; c.height = H * dpr;
+  const x = c.getContext('2d'); x.scale(dpr, dpr);
+  const wide = W > H, s = wide ? H * .25 : Math.min(H * .29, W * .6), ox = W / 2, oy = H * (wide ? .47 : .52), J = shapeJoints(p), P = a => [ox + a[0] * s, oy + a[1] * s];
+  const line = (pts, w) => { x.lineWidth = w; x.beginPath(); pts.forEach((q, i) => { const r = P(q); i ? x.lineTo(r[0], r[1]) : x.moveTo(r[0], r[1]); }); x.stroke(); };
+  const body = extra => {
+    x.lineCap = 'round'; x.lineJoin = 'round';
+    line([J.sL, J.eL, J.wL], s * .13 + extra); line([J.sR, J.eR, J.wR], s * .13 + extra);
+    line([J.hL, J.kL, J.aL], s * .17 + extra); line([J.hR, J.kR, J.aR], s * .17 + extra);
+    line([J.sL, J.sR], s * .14 + extra); line([J.hL, J.hR], s * .2 + extra);
+    line([[J.sc[0], J.sc[1]], J.hc], s * (p.side ? .3 : .4) + extra);
+    line([J.sc, J.head], s * .1 + extra);
+    const h = P(J.head); x.beginPath(); x.arc(h[0], h[1], s * .15 + extra / 2, 0, 7); x.fill();
+  };
+  x.strokeStyle = x.fillStyle = '#fff'; body(Math.max(7, s * .025));
+  x.globalCompositeOperation = 'destination-out'; body(0);
+  outlineCache.set(key, c); return c;
+}
+const SEG_LINE = { aL: [11, 13], fL: [13, 15], aR: [12, 14], fR: [14, 16], tL: [23, 25], sL: [25, 27], tR: [24, 26], sR: [26, 28] };
+function traceFrame(g, x, now, dt, W, H, view) {
+  const p = g.seq[g.idx], c = $('cv'), dpr = c.width / W;
+  const v = $('vid'), aspect = g.cam && v.videoWidth ? v.videoWidth / v.videoHeight : 1;
+  const r = g.cam ? (g.lm && fullBody(g.lm) ? matchShape(g.lm, p, aspect) : { ok: false, bad: [] }) : { ok: !!g.holding, bad: [] };
+  x.save();
+  const art = outlineFor(p, W, H, dpr);
+  const tint = r.ok ? '#ffcf3f' : '#39d353';
+  const tmp = g.tint || (g.tint = document.createElement('canvas'));
+  tmp.width = art.width; tmp.height = art.height;
+  const t = tmp.getContext('2d'); t.drawImage(art, 0, 0); t.globalCompositeOperation = 'source-in'; t.fillStyle = tint; t.fillRect(0, 0, tmp.width, tmp.height);
+  x.drawImage(tmp, 0, 0, W, H); x.restore();
+  if (view && g.lm && r.bad.length) {
+    x.strokeStyle = '#ff4d4d'; x.lineWidth = 7; x.lineCap = 'round';
+    r.bad.forEach(k => { const q = SEG_LINE[k]; if (!q) return; const a = mapPoint(g.lm[q[0]], view), b = mapPoint(g.lm[q[1]], view); x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(b.x, b.y); x.stroke(); });
+  }
+  const el = now - g.modeT;
+  const next = ok => {
+    if (ok) { g.score++; burst(W / 2, H * .4); beep(880, 200); }
+    else beep(330, 200);
+    g.mode = 'rest'; g.modeT = now; g.lastOk = ok;
+  };
+  if (g.mode === 'ready') {
+    $('hudL').textContent = (g.idx + 1) + ' / 5';
+    say(p.name + ' 따라 해요 ' + Math.max(1, Math.ceil(5 - el / 1000)) + '초', false);
+    if (el < 300) say(p.name + ' 따라 해요', true);
+    g.okMs = r.ok ? g.okMs + dt : 0;
+    if (g.okMs > 300) { g.mode = 'hold'; g.modeT = now; g.hold = 0; g.miss = 0; beep(660, 120); }
+    else if (el >= 5000) next(false);
+  } else if (g.mode === 'hold') {
+    if (r.ok) { g.hold += dt; g.miss = 0; } else g.miss += dt;
+    const bw = W * .7, bx = (W - bw) / 2, by = H * (W > H ? .75 : .86);
+    x.fillStyle = '#fffdf5'; x.fillRect(bx, by, bw, 22); x.fillStyle = '#ffcf3f'; x.fillRect(bx, by, bw * Math.min(1, g.hold / 5000), 22);
+    x.strokeStyle = '#23395b'; x.lineWidth = 3; x.strokeRect(bx, by, bw, 22);
+    say(r.ok ? '그대로! ' + Math.max(1, Math.ceil(5 - g.hold / 1000)) + '초' : '다시 맞춰요', false);
+    if (g.hold >= 5000) next(true); else if (g.miss > 1500) next(false);
+  } else {
+    say(g.lastOk ? '참 잘했어요!' : '괜찮아요, 다음 자세!', false);
+    if (el > 1300) {
+      g.idx++; g.mode = 'ready'; g.modeT = now; g.okMs = 0; lastSpoken = '';
+      if (g.idx >= g.seq.length) finish(g.score);
+    }
+  }
+}
+function drawCar(x, cx, cy, w, tilt) {
+  const h = w * 1.7;
+  x.save(); x.translate(cx, cy); x.rotate(tilt);
+  x.fillStyle = '#23395b'; [[-.62, -.32], [.42, -.32], [-.62, .18], [.42, .18]].forEach(([a, b]) => x.fillRect(a * w, b * h, w * .2, h * .22));
+  x.fillStyle = '#ff4d5e'; x.beginPath(); x.roundRect(-w / 2, -h / 2, w, h, w * .28); x.fill();
+  x.fillStyle = '#d9f3ff'; x.beginPath(); x.roundRect(-w * .32, -h * .24, w * .64, h * .24, 6); x.fill();
+  x.fillStyle = '#ffcf3f'; x.fillRect(-w * .36, -h * .49, w * .18, h * .05); x.fillRect(w * .18, -h * .49, w * .18, h * .05);
+  x.restore();
+}
+function raceFrame(g, x, now, dt, W, H, view) {
+  const LEN = 45, el = (now - g.t0) / 1000, v = $('vid');
+  const seen = g.cam ? upperBody(g.lm) : true;
+  let target = 0, deg = 0;
+  if (g.cam && seen) { deg = steerAngle(g.lm, v.videoWidth / v.videoHeight); target = steerValue(deg); }
+  if (!g.cam && g.holding && g.px !== undefined) { target = Math.max(-1, Math.min(1, (g.px / W - .5) * 3)); deg = target * 35; }
+  g.steer += (target - g.steer) * .25;
+  const rate = Math.min(1.5, 1 + el / 60), slow = now < g.crash ? .55 : 1, speed = H / 1500 * rate * slow;
+  const roadW = Math.min(W * .92, H * .75), left = (W - roadW) / 2;
+  g.carX = Math.max(.1, Math.min(.9, g.carX + g.steer * dt / 1700));
+  g.road = (g.road + speed * dt) % 90;
+  x.fillStyle = '#8fdc72'; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#4b566b'; x.fillRect(left, 0, roadW, H);
+  x.fillStyle = '#fffdf5'; x.fillRect(left, 0, 8, H); x.fillRect(left + roadW - 8, 0, 8, H);
+  for (let i = -1; i < H / 90 + 1; i++) { const y = i * 90 + g.road; [1 / 3, 2 / 3].forEach(f => x.fillRect(left + roadW * f - 3, y, 6, 46)); }
+  const carW = Math.min(roadW * .17, 74), carY = H * .76, carPx = left + roadW * g.carX;
+  if (now > g.spawn) {
+    g.spawn = now + Math.max(650, 1100 - el * 8);
+    const lane = Math.random() * 3 | 0;
+    g.items.push({ f: (lane + .5) / 3, y: -50, e: Math.random() < .68 ? '⭐' : '🚧' });
+  }
+  const size = carW * 1.05;
+  g.items = g.items.filter(it => {
+    it.y += speed * dt;
+    if (it.y > H + 60) return false;
+    const ix = left + roadW * it.f;
+    if (Math.abs(ix - carPx) < carW * .85 && Math.abs(it.y - carY) < carW * 1.2) {
+      if (it.e === '⭐') { g.score++; burst(ix, it.y); beep(880, 80); }
+      else { g.crash = now + 700; g.flash = now; beep(180, 220); }
+      return false;
+    }
+    x.font = size + 'px serif'; x.fillText(it.e, ix, it.y);
+    return true;
+  });
+  const shake = now < g.crash ? Math.sin(now / 30) * 5 : 0;
+  drawCar(x, carPx + shake, carY, carW, g.steer * .22);
+  if (g.cam && v.videoWidth) {
+    const pw = Math.min(W * .3, 150), ph = pw * v.videoHeight / v.videoWidth, px = W - pw - 12, py = 62;
+    x.save(); x.translate(px + pw, py); x.scale(-1, 1); x.drawImage(v, 0, 0, pw, ph); x.restore();
+    x.strokeStyle = '#23395b'; x.lineWidth = 3; x.strokeRect(px, py, pw, ph);
+  }
+  const wr = Math.min(W * .1, 44), wx = wr + 16, wy = 62 + wr + 4;
+  x.save(); x.translate(wx, wy); x.rotate(deg * Math.PI / 180);
+  x.strokeStyle = seen ? '#ffcf3f' : '#fffdf5'; x.lineWidth = 9; x.beginPath(); x.arc(0, 0, wr, 0, 7); x.stroke();
+  x.lineWidth = 6; x.beginPath(); x.moveTo(-wr, 0); x.lineTo(wr, 0); x.moveTo(0, 0); x.lineTo(0, wr); x.stroke(); x.restore();
+  $('hudL').textContent = '⭐ ' + g.score + ' · ' + Math.max(0, Math.ceil(LEN - el)) + '초';
+  say(!seen ? '두 손을 보여 주세요' : now < g.crash ? '쿵! 조심조심' : g.cam ? '' : '왼쪽, 오른쪽을 꾹 눌러요', false);
+  if (el >= LEN) finish(g.score);
+}
+function drawBall(x, cx, cy, r) {
+  x.fillStyle = '#f08a24'; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill();
+  x.strokeStyle = '#7a3f0b'; x.lineWidth = Math.max(2, r * .1);
+  x.beginPath(); x.arc(cx, cy, r, 0, 7); x.moveTo(cx - r, cy); x.lineTo(cx + r, cy); x.moveTo(cx, cy - r); x.lineTo(cx, cy + r); x.stroke();
+}
+function hoopFrame(g, x, now, dt, W, H) {
+  const LEN = 45, el = (now - g.t0) / 1000, v = $('vid');
+  const seen = g.cam ? bodyVisible(g.lm) : true;
+  if (g.cam && seen) g.px2 += (aimX(g.lm) - g.px2) * .3;
+  if (!g.cam && g.px !== undefined) g.px2 += (Math.max(.12, Math.min(.88, g.px / W)) - g.px2) * .3;
+  const hoopX = W * (.5 + Math.sin(el * (.55 + el * .004)) * .3), hoopY = H * .27, hoopW = Math.min(W * .24, H * .22, 120);
+  x.fillStyle = '#1f3a6e'; x.fillRect(0, 0, W, H * .42);
+  x.fillStyle = '#2b4f90'; for (let i = 0; i < 16; i++) { x.beginPath(); x.arc((i + .5) * W / 16, H * .32 + (i % 3) * 14, 6, 0, 7); x.fill(); }
+  const fl = x.createLinearGradient(0, H * .42, 0, H); fl.addColorStop(0, '#e6b676'); fl.addColorStop(1, '#c98c47'); x.fillStyle = fl; x.fillRect(0, H * .42, W, H * .58);
+  x.strokeStyle = '#fffdf5'; x.lineWidth = 4; x.beginPath(); x.ellipse(W / 2, H * .62, W * .38, H * .1, 0, 0, 7); x.stroke();
+  x.fillStyle = '#fffdf5'; x.fillRect(hoopX - hoopW * .8, hoopY - hoopW * .95, hoopW * 1.6, hoopW * .95);
+  x.strokeStyle = '#ff4d5e'; x.lineWidth = 4; x.strokeRect(hoopX - hoopW * .3, hoopY - hoopW * .6, hoopW * .6, hoopW * .45);
+  x.strokeStyle = '#fffdf5'; x.lineWidth = 2; for (let i = -2; i <= 2; i++) { x.beginPath(); x.moveTo(hoopX + i * hoopW * .2, hoopY); x.lineTo(hoopX + i * hoopW * .13, hoopY + hoopW * .4); x.stroke(); }
+  x.strokeStyle = '#ff6a00'; x.lineWidth = 7; x.beginPath(); x.ellipse(hoopX, hoopY, hoopW * .5, hoopW * .12, 0, 0, 7); x.stroke();
+  let fired = null;
+  if (g.cam && seen && !g.ball) { const r = shotStep(g.shot, g.lm); if (r.fire) fired = r; }
+  if (!g.cam && g.down && !g.ball) { fired = { jump: false }; }
+  g.down = null;
+  const u = Math.min(W * .14, H * .11, 64), px = W * g.px2, py = Math.min(H * .84, H - u * .7 - 64);
+  if (fired) { g.ball = { x: px, t: now, jump: fired.jump }; beep(620, 100); }
+  x.fillStyle = '#2f7de0'; x.beginPath(); x.roundRect(px - u * .5, py - u * .55, u, u * 1.2, u * .2); x.fill();
+  x.fillStyle = '#23395b'; x.beginPath(); x.arc(px, py - u * .85, u * .34, 0, 7); x.fill();
+  x.strokeStyle = '#2f7de0'; x.lineWidth = u * .2; x.lineCap = 'round';
+  const up = !!g.ball; [-1, 1].forEach(d => { x.beginPath(); x.moveTo(px + d * u * .5, py - u * .4); x.lineTo(px + d * u * .62, py + (up ? -u * 1.3 : u * .15)); x.stroke(); });
+  if (!g.ball) drawBall(x, px, py - u * 1.35, u * .34);
+  if (g.ball) {
+    const b = g.ball, q = (now - b.t) / 900, e = Math.min(1, q), by = (py - u * 1.35) + (hoopY - (py - u * 1.35)) * e - Math.sin(e * Math.PI) * H * .14;
+    drawBall(x, b.x, by, u * .34 * (1 - e * .45));
+    if (q >= 1) {
+      const ok = isBasket(b.x, hoopX, hoopW, b.jump), pts = b.jump ? 2 : 1;
+      if (ok) { g.score += pts; burst(hoopX, hoopY); beep(990, 180); }
+      else beep(280, 150);
+      g.msg = { t: now, text: ok ? (b.jump ? '점프 슛! +2' : '쏙! +1') : '아깝다!' };
+      g.ball = null;
+    }
+  }
+  if (g.msg && now - g.msg.t < 900) { x.font = '44px Jua, sans-serif'; x.fillStyle = '#23395b'; x.fillText(g.msg.text, W / 2, H * .55); }
+  if (g.cam && v.videoWidth) {
+    const pw = Math.min(W * .26, 130), ph = pw * v.videoHeight / v.videoWidth, cx = 12, cy = H - ph - 92;
+    x.save(); x.translate(cx + pw, cy); x.scale(-1, 1); x.drawImage(v, 0, 0, pw, ph); x.restore();
+    x.strokeStyle = '#23395b'; x.lineWidth = 3; x.strokeRect(cx, cy, pw, ph);
+  }
+  $('hudL').textContent = '🏀 ' + g.score + ' · ' + Math.max(0, Math.ceil(LEN - el)) + '초';
+  say(!seen ? '허리까지 보여 주세요' : g.ball ? '' : g.cam ? (g.shot.armed ? '번쩍! 뛰면서 올려요' : '손을 내려요') : '눌러서 슛!', false);
+  if (el >= LEN && !g.ball) finish(g.score);
+}
+function playFrame(g, x, now, dt, W, H, hands, view) {
+  const el = (now - g.t0) / 1000;
+  if (g.game === 'hoop') return hoopFrame(g, x, now, dt, W, H);
+  if (g.game === 'race') return raceFrame(g, x, now, dt, W, H, view);
+  if (g.game === 'trace') return traceFrame(g, x, now, dt, W, H, view);
+  if (g.game === 'step') return stepFrame(g, x, now, W, H);
+  if (g.game === 'balloon') {
+    const LEN = 40, r = Math.max(38, Math.min(W, H) * .1);
+    $('hudL').textContent = '🎈 ' + g.score + ' · ' + Math.max(0, Math.ceil(LEN - el)) + '초';
+    say('풍선을 터트려요!', false);
+    if (now > g.spawn) { g.spawn = now + 900; g.items.push({ x: r + Math.random() * (W - r * 2), y: H + r, v: H / 420, e: ['🎈', '🎈', '🫧', '⭐'][Math.random() * 4 | 0] }); }
+    const pts = hands.slice(); if (g.down) { pts.push(g.down); }
+    g.items = g.items.filter(b => {
+      b.y -= b.v * dt / 16;
+      if (b.y < -r) return false;
+      if (pts.some(p => Math.hypot(p.x - b.x, p.y - b.y) < r * 1.1)) { g.score++; burst(b.x, b.y); beep(700 + Math.random() * 300, 80); return false; }
+      x.font = r * 1.7 + 'px serif'; x.fillText(b.e, b.x, b.y);
+      return true;
+    });
+    g.down = null;
+    if (el >= LEN) finish(g.score);
+  } else if (g.game === 'balance') {
+    const GOAL = 10, LEN = 30;
+    const up = g.cam ? (g.lm && fullBody(g.lm) && oneLeg(g.lm)) : !!g.holding;
+    if (up) g.hold += dt / 1000;
+    const stageI = g.hold >= 10 ? 3 : g.hold >= 6 ? 2 : g.hold >= 3 ? 1 : 0;
+    if (stageI !== g.stageI) { if (g.stageI !== undefined) { beep(880, 160); burst(W / 2, H * .42); } g.stageI = stageI; }
+    x.font = Math.min(W, H) * .32 + 'px serif'; x.fillText(['🥚', '🐣', '🐥', '🐓'][stageI], W / 2, H * .42);
+    const bw = W * .7, bx = (W - bw) / 2, by = H * .66;
+    x.fillStyle = '#fffdf5'; x.fillRect(bx, by, bw, 24); x.fillStyle = '#ff6b8a'; x.fillRect(bx, by, bw * Math.min(1, g.hold / GOAL), 24);
+    x.strokeStyle = '#23395b'; x.lineWidth = 3; x.strokeRect(bx, by, bw, 24);
+    $('hudL').textContent = g.hold.toFixed(0) + '초';
+    say(g.cam ? (up ? '잘한다! 그대로!' : '한 발을 들어요') : (up ? '잘한다! 그대로!' : '화면을 꾹 누르면 한 발 들기예요'), g.cam);
+    if (g.hold >= GOAL || el >= LEN) finish(Math.min(g.hold, GOAL));
+  } else {
+    const card = g.seq[g.idx];
+    $('hudL').textContent = (g.idx + 1) + ' / 5';
+    say(card.t);
+    x.font = Math.min(W, H) * .34 + 'px serif'; x.fillText(card.e, W / 2, H * .38);
+    const match = g.cam ? (g.lm && fullBody(g.lm) && POSES[card.id](g.lm)) : false;
+    g.poseHold = match ? g.poseHold + dt : 0;
+    g.cardT = g.cardT ?? now;
+    const tapped = !g.cam && g.down; g.down = null;
+    const done = g.poseHold > 800 || tapped;
+    if (done || now - g.cardT > 9000) {
+      if (done) { g.score++; burst(W / 2, H * .38); beep(880, 160); } else beep(330, 120);
+      g.idx++; g.poseHold = 0; g.cardT = now;
+      if (g.idx >= 5) finish(g.score);
+    }
+  }
+}
+
+/* 화면 방향: 가로를 고르면 놀이를 시작할 때 전체 화면으로 바꾸고 가로로 고정한다. 고정이 안 되는 기기는 돌려 달라고 안내한다 */
+let screenMode = 'portrait';
+try { screenMode = localStorage.getItem('kongkong-mode') === 'landscape' ? 'landscape' : 'portrait'; } catch (e) {}
+const MODE_HINT = { portrait: '휴대폰으로 바로 할 때 쓰는 기본 화면입니다.', landscape: 'TV 미러링용입니다. 놀이를 시작하면 화면이 가로로 바뀝니다.' };
+function setMode(m) {
+  screenMode = m;
+  document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+  $('modeHint').textContent = MODE_HINT[m];
+  try { localStorage.setItem('kongkong-mode', m); } catch (e) {}
+}
+document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+setMode(screenMode);
+function enterTv() {
+  if (screenMode !== 'landscape') return;
+  const lock = () => { try { const p = screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'); if (p) p.catch(() => {}); } catch (e) {} };
+  try {
+    if (document.fullscreenElement) { lock(); return; }
+    const el = document.documentElement, p = el.requestFullscreen && el.requestFullscreen({ navigationUI: 'hide' });
+    if (p) p.then(lock).catch(() => {});
+  } catch (e) {}
+}
+function exitTv() {
+  try { if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch (e) {}
+  try { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); } catch (e) {}
+}
+document.querySelectorAll('[data-game]').forEach(b => b.addEventListener('click', () => { enterTv(); start(b.dataset.game); }));
+$('quit').addEventListener('click', () => { stop(); $('turn').hidden = true; $('home').hidden = false; exitTv(); });
+$('again').addEventListener('click', () => { enterTv(); start(current); });
+$('back').addEventListener('click', () => { $('end').hidden = true; $('home').hidden = false; exitTv(); });
+const cv = $('cv');
+cv.addEventListener('pointerdown', e => {
+  if (!G) return;
+  G.down = { x: e.offsetX, y: e.offsetY }; G.holding = true; G.px = e.offsetX;
+  if (G.game === 'step' && G.taps) {
+    const third = cv.clientWidth / 3, k = e.offsetX < third ? 'left' : e.offsetX > third * 2 ? 'right' : 'center', t = performance.now();
+    G.taps[k] = t; G.taps.last = t; G.taps.lastKind = k;
+  }
+});
+cv.addEventListener('pointermove', e => { if (G) G.px = e.offsetX; });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(n => cv.addEventListener(n, () => { if (G) G.holding = false; }));
+</script>
+</body></html>
