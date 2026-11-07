@@ -34,7 +34,11 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { #turn span { animation: none; } }
 .inapp { margin: 0; background: var(--paper); border: 3px solid var(--berry); border-radius: 16px; padding: 12px 14px; display: grid; gap: 8px; }
 .inapp a { justify-self: start; font-family: var(--display); font-size: 1.125rem; color: var(--ink); background: var(--sun); border: 3px solid var(--line); border-radius: 999px; padding: 4px 16px; text-decoration: none; }
-#pick { position: fixed; inset: 0; z-index: 25; background: rgba(35, 57, 91, .55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.lvl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.lvl button { font-family: var(--display); font-size: 1.25rem; color: var(--ink); background: #fff; border: 3px solid var(--line); border-radius: 14px; padding: 6px 4px; cursor: pointer; display: grid; gap: 2px; line-height: 1.2; }
+.lvl button small { font-family: var(--body); font-size: .8125rem; }
+.lvl button[aria-checked="true"] { background: var(--sun); box-shadow: inset 0 0 0 2px var(--line); }
+#pick { position: fixed; inset: 0; z-index: 25; background: rgba(35, 57, 91, .55); display: flex; align-items: safe center; justify-content: center; padding: 16px; overflow-y: auto; }
 .pick-box { background: var(--paper); border: 3px solid var(--line); border-radius: 20px; padding: 18px; width: min(520px, 100%); display: grid; gap: 12px; }
 .pick-box h2 { font-family: var(--display); font-weight: 400; font-size: 1.75rem; margin: 0; text-align: center; }
 .pick-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -224,6 +228,11 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
 <div id="pick" role="dialog" aria-modal="true" aria-labelledby="pickTitle" hidden>
   <div class="pick-box">
     <h2 id="pickTitle"></h2>
+    <div class="lvl" id="pickLevel" role="radiogroup" aria-label="난이도" hidden>
+      <button type="button" data-lvl="easy" aria-checked="true" role="radio">초급<small>아무 풍선이나</small></button>
+      <button type="button" data-lvl="mid" aria-checked="false" role="radio">중급<small>빨간 풍선만</small></button>
+      <button type="button" data-lvl="hard" aria-checked="false" role="radio">고급<small>파랑은 왼손<br>분홍은 오른손</small></button>
+    </div>
     <div class="pick-row">
       <button type="button" id="pickSolo"><span aria-hidden="true">🙋</span>혼자 하기</button>
       <button type="button" id="pickVs"><span aria-hidden="true">👫</span>둘이 겨루기</button>
@@ -366,8 +375,8 @@ function palmsOf(lm, view) {
     const pts = ids.filter(i => lm[i] && lm[i].visibility > .3).map(i => mapPoint(lm[i], view));
     if (!pts.length) return;
     const cx = pts.reduce((a, q) => a + q.x, 0) / pts.length, cy = pts.reduce((a, q) => a + q.y, 0) / pts.length;
-    const r = pts.length > 1 ? Math.max(16, Math.min(60, Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) * 1.3)) : 20;
-    out.push({ x: cx, y: cy, r });
+    const r = pts.length > 1 ? Math.max(12, Math.min(34, Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) * .6)) : 16;
+    out.push({ x: cx, y: cy, r, hand: ids[0] === 15 ? 'L' : 'R' });
   });
   return out;
 }
@@ -475,7 +484,7 @@ async function start(game, opts = {}) {
   $('home').hidden = true; $('end').hidden = true; $('play').hidden = false;
   $('hudL').textContent = ''; say('잠깐만 기다려요', false);
   beep(660, 80);
-  const g = G = { game, vs: !!opts.vs, lms: [null, null], raw: [null, null], players: opts.vs && game !== 'balloon' ? [0, 1].map(i => ({ game, side: i, sub: true, cam: false, lm: null, v: halfCanvas[i], sparks: [], score: 0, t0: 0 })) : null, vsScore: [0, 0], cam: false, stream: null, pose: null, lm: null, phase: 'ready', t0: performance.now(), hold: 0, score: 0, items: [], sparks: [], last: performance.now(), down: null, seq: [], idx: 0, poseHold: 0, spawn: 0 };
+  const g = G = { game, level: opts.level || 'easy', vs: !!opts.vs, lms: [null, null], raw: [null, null], players: opts.vs && game !== 'balloon' ? [0, 1].map(i => ({ game, side: i, sub: true, cam: false, lm: null, v: halfCanvas[i], sparks: [], score: 0, t0: 0 })) : null, vsScore: [0, 0], cam: false, stream: null, pose: null, lm: null, phase: 'ready', t0: performance.now(), hold: 0, score: 0, items: [], sparks: [], last: performance.now(), down: null, seq: [], idx: 0, poseHold: 0, spawn: 0 };
   const toTouch = why => {
     if (g.stream) g.stream.getTracks().forEach(t => t.stop());
     g.stream = null; g.cam = false; $('vid').srcObject = null;
@@ -581,8 +590,7 @@ function frame(now) {
     (g.vs ? g.lms : [g.lm]).forEach((lm, who) => {
       if (!lm) return;
       const own = [];
-      [15, 16, 19, 20].forEach(i => { if (lm[i].visibility > .3) own.push(mapPoint(lm[i], view)); });
-      palmsOf(lm, view).forEach(q => { own.push(q); rings.push({ ...q, who: g.vs ? who : -1 }); });
+      palmsOf(lm, view).forEach(q => { own.push(q); rings.push({ ...q, who: g.vs ? who : -1, col: ringColor(g, q) }); });
       own.forEach(q => { q.who = who; hands.push(q); });
     });
   } else {
@@ -590,7 +598,6 @@ function frame(now) {
     x.fillStyle = '#8fdc72'; x.fillRect(0, H * .8, W, H * .2);
   }
   x.textAlign = 'center'; x.textBaseline = 'middle';
-  drawRings(x, rings);
 
   const needTurn = screenMode === 'landscape' && H > W && (g.phase === 'calib' || g.phase === 'count');
   $('turn').hidden = !needTurn;
@@ -611,7 +618,7 @@ function frame(now) {
     if (ok) { g.calibOk = g.calibOk ?? now; if (now - g.calibOk > 1200) { g.phase = 'count'; g.t0 = now; } } else g.calibOk = null;
   } else if (g.phase === 'count') {
     const left = 3 - Math.floor((now - g.t0) / 1000);
-    if (left > 0) { say(g.vs ? (g.game === 'balloon' ? '내 쪽 풍선을 더 많이 터트려요' : '같은 문제로 점수를 겨뤄요') : INTRO[g.game]); x.font = '120px Jua, sans-serif'; x.fillStyle = '#23395b'; x.fillText(left, W / 2, H * .42); }
+    if (left > 0) { say(g.game === 'balloon' ? LEVEL_TIP[g.level] : g.vs ? '같은 문제로 점수를 겨뤄요' : INTRO[g.game]); x.font = '120px Jua, sans-serif'; x.fillStyle = '#23395b'; x.fillText(left, W / 2, H * .42); }
     else {
       g.phase = 'play'; g.t0 = now; beep(880, 200);
       if (g.players) {
@@ -624,6 +631,7 @@ function frame(now) {
     if (g.players.every(P => P.done)) finishVs(g.players[0].result, g.players[1].result, g.game);
   } else if (g.phase === 'play') playFrame(g, x, now, dt, W, H, hands, view);
 
+  drawRings(x, rings);
   g.sparks = g.sparks.filter(s => s.life-- > 0);
   x.fillStyle = '#ffcf3f'; g.sparks.forEach(s => { s.x += s.dx; s.y += s.dy; x.fillRect(s.x, s.y, 8, 8); });
   if (G === g) requestAnimationFrame(frame);
@@ -641,14 +649,58 @@ function initPlay(g, now, shared) {
   }
 }
 const RING = ['#4f8cff', '#ff9a3c'];
+/* 풍선 팡팡 난이도: easy 아무 풍선이나, mid 빨간 풍선만, hard 파랑은 왼손·분홍은 오른손 */
+const BCOL = { red: '#ff4d5e', blue: '#4f8cff', pink: '#ff7eb6', yellow: '#ffcf3f', green: '#47c46b', purple: '#9b6bff' };
+const HAND_COL = { L: BCOL.blue, R: BCOL.pink };
+function ringColor(g, q) { return g.game === 'balloon' && g.level === 'hard' ? HAND_COL[q.hand] : null; }
+function balloonColor(level, rnd = Math.random) {
+  if (level === 'hard') return rnd() < .5 ? 'blue' : 'pink';
+  if (level === 'mid') return rnd() < .45 ? 'red' : ['blue', 'yellow', 'green', 'purple'][rnd() * 4 | 0];
+  return ['red', 'blue', 'pink', 'yellow', 'green', 'purple'][rnd() * 6 | 0];
+}
+/* 닿은 손바닥들로 결과를 정한다: pop 득점, wrong 감점(중급의 다른 색), pass 반대 손이라 그대로 둠 */
+function balloonHit(level, color, touching) {
+  if (!touching.length) return null;
+  if (level === 'mid') return color === 'red' ? 'pop' : 'wrong';
+  if (level === 'hard') return touching.some(p => p.hand === (color === 'blue' ? 'L' : 'R')) ? 'pop' : 'pass';
+  return 'pop';
+}
+function drawBalloon(x, cx, cy, r, color) {
+  const c = BCOL[color];
+  x.save();
+  x.strokeStyle = 'rgba(35, 57, 91, .55)'; x.lineWidth = 2;
+  x.beginPath(); x.moveTo(cx, cy + r * 1.18); x.quadraticCurveTo(cx - r * .25, cy + r * 1.6, cx + r * .1, cy + r * 2.1); x.stroke();
+  x.fillStyle = c; x.beginPath(); x.ellipse(cx, cy, r * .86, r, 0, 0, 7); x.fill();
+  x.beginPath(); x.moveTo(cx - r * .14, cy + r * 1.18); x.lineTo(cx + r * .14, cy + r * 1.18); x.lineTo(cx, cy + r * .98); x.closePath(); x.fill();
+  x.fillStyle = 'rgba(255, 255, 255, .55)'; x.beginPath(); x.ellipse(cx - r * .32, cy - r * .38, r * .16, r * .28, -.5, 0, 7); x.fill();
+  x.lineWidth = 3; x.strokeStyle = 'rgba(35, 57, 91, .35)'; x.beginPath(); x.ellipse(cx, cy, r * .86, r, 0, 0, 7); x.stroke();
+  x.restore();
+}
+function balloonStep(g, x, b, pts, r, now, onPop) {
+  const touching = pts.filter(p => (b.side === undefined || p.who === b.side) && Math.hypot(p.x - b.x, p.y - b.y) < r * .8 + p.r);
+  const res = balloonHit(g.level, b.c, touching);
+  if (res === 'pop') { onPop(1); burst(b.x, b.y); beep(700 + Math.random() * 300, 80); return false; }
+  if (res === 'wrong') { onPop(-1); beep(180, 160); g.msg = { t: now, text: '빨간 풍선만!', x: b.x, y: b.y }; return false; }
+  if (res === 'pass' && !b.warned) { b.warned = true; beep(260, 90); g.msg = { t: now, text: b.c === 'blue' ? '왼손으로!' : '오른손으로!', x: b.x, y: b.y }; }
+  drawBalloon(x, b.x, b.y, r, b.c);
+  return true;
+}
+function drawMsg(g, x, now) {
+  if (!g.msg || now - g.msg.t > 700) return;
+  x.font = '28px Jua, sans-serif'; x.lineWidth = 5; x.strokeStyle = '#fffdf5'; x.strokeText(g.msg.text, g.msg.x, g.msg.y - 50);
+  x.fillStyle = '#23395b'; x.fillText(g.msg.text, g.msg.x, g.msg.y - 50);
+}
+const LEVEL_TIP = { easy: '풍선을 터트려요!', mid: '빨간 풍선만 터트려요!', hard: '파랑은 왼손, 분홍은 오른손!' };
 function drawRings(x, rings) {
   rings.forEach(q => {
     x.save();
     x.shadowColor = 'rgba(0, 0, 0, .35)'; x.shadowBlur = 6;
-    x.fillStyle = q.who >= 0 ? RING[q.who] + '40' : 'rgba(255, 255, 255, .22)';
+    const col = q.col || (q.who >= 0 ? RING[q.who] : null);
+    x.fillStyle = col ? col + '40' : 'rgba(255, 255, 255, .22)';
     x.beginPath(); x.arc(q.x, q.y, q.r, 0, 7); x.fill();
     x.lineWidth = 4; x.strokeStyle = '#ffffff'; x.stroke();
-    if (q.who >= 0) { x.shadowBlur = 0; x.lineWidth = 3; x.strokeStyle = RING[q.who]; x.beginPath(); x.arc(q.x, q.y, q.r - 4, 0, 7); x.stroke(); }
+    if (q.col) { x.shadowBlur = 0; x.lineWidth = 4; x.strokeStyle = q.col; x.beginPath(); x.arc(q.x, q.y, q.r - 4, 0, 7); x.stroke(); }
+    else if (q.who >= 0) { x.shadowBlur = 0; x.lineWidth = 3; x.strokeStyle = RING[q.who]; x.beginPath(); x.arc(q.x, q.y, q.r - 4, 0, 7); x.stroke(); }
     x.restore();
   });
 }
@@ -664,7 +716,6 @@ function vsHalves(g, x, now, dt, W, H) {
       view = coverView(c.width, c.height, half, H);
       x.save(); x.translate(half, 0); x.scale(-1, 1); x.drawImage(c, view.ox, view.oy, view.dw, view.dh); x.restore();
       if (P.lm) {
-        [15, 16, 19, 20].forEach(k => { if (P.lm[k].visibility > .3) hands.push(mapPoint(P.lm[k], view)); });
         palmsOf(P.lm, view).forEach(q => { hands.push(q); rings.push({ ...q, who: i }); });
       }
     } else {
@@ -672,12 +723,12 @@ function vsHalves(g, x, now, dt, W, H) {
       x.fillStyle = '#8fdc72'; x.fillRect(0, H * .8, half, H * .2);
     }
     x.textAlign = 'center'; x.textBaseline = 'middle';
-    drawRings(x, rings);
     if (g.phase === 'play' && !P.done) {
       SUB = P;
       try { playFrame(P, x, now, dt, half, H, hands, view); } finally { SUB = null; }
       x.textAlign = 'center'; x.textBaseline = 'middle';
     }
+    drawRings(x, rings);
     P.sparks = P.sparks.filter(s => s.life-- > 0);
     x.fillStyle = '#ffcf3f'; P.sparks.forEach(s => { s.x += s.dx; s.y += s.dy; x.fillRect(s.x, s.y, 8, 8); });
     if (g.phase === 'play') {
@@ -917,21 +968,20 @@ function hoopFrame(g, x, now, dt, W, H) {
   if (el >= LEN && !g.ball) finish(g.score);
 }
 function vsFrame(g, x, now, dt, W, H, hands) {
-  const LEN = 40, el = (now - g.t0) / 1000, half = W / 2, r = Math.max(30, Math.min(half, H) * .1);
+  const LEN = 40, el = (now - g.t0) / 1000, half = W / 2, r = Math.max(28, Math.min(half, H) * .09);
   if (now > g.spawn) {
     g.spawn = now + 850;
-    const f = .1 + Math.random() * .8, e = ['🎈', '🎈', '🫧', '⭐'][Math.random() * 4 | 0];
-    [0, 1].forEach(side => g.items.push({ side, x: side * half + r + f * (half - r * 2), y: H + r, v: H / 400, e }));
+    const f = .1 + Math.random() * .8, c = balloonColor(g.level);
+    [0, 1].forEach(side => g.items.push({ side, x: side * half + r + f * (half - r * 2), y: H + r, v: H / 400, c }));
   }
   const pts = hands.slice();
-  if (g.down) { pts.push({ x: g.down.x, y: g.down.y, who: g.down.x < half ? 0 : 1 }); g.down = null; }
+  if (g.down) { const who = g.down.x < half ? 0 : 1; pts.push({ x: g.down.x, y: g.down.y, r: 22, who, hand: g.down.x - who * half < half / 2 ? 'L' : 'R' }); g.down = null; }
   g.items = g.items.filter(b => {
     b.y -= b.v * dt / 16;
-    if (b.y < -r) return false;
-    if (pts.some(p => p.who === b.side && Math.hypot(p.x - b.x, p.y - b.y) < r * 1.1)) { g.vsScore[b.side]++; burst(b.x, b.y); beep(b.side ? 760 : 620, 80); return false; }
-    x.font = r * 1.7 + 'px serif'; x.fillText(b.e, b.x, b.y);
-    return true;
+    if (b.y < -r * 2) return false;
+    return balloonStep(g, x, b, pts, r, now, d => { g.vsScore[b.side] = Math.max(0, g.vsScore[b.side] + d); });
   });
+  drawMsg(g, x, now);
   x.fillStyle = 'rgba(255, 253, 245, .9)'; x.fillRect(half - 3, 0, 6, H);
   [['파랑', '#4f8cff', half / 2], ['주황', '#ff9a3c', half * 1.5]].forEach(([n, col, cx], i) => {
     const t = n + ' ' + g.vsScore[i];
@@ -942,7 +992,7 @@ function vsFrame(g, x, now, dt, W, H, hands) {
     x.fillStyle = '#ffffff'; x.fillText(t, cx, y0 + 24);
   });
   $('hudL').textContent = Math.max(0, Math.ceil(LEN - el)) + '초';
-  say('', false);
+  say(g.level === 'easy' ? '' : LEVEL_TIP[g.level], false);
   if (el >= LEN) finishVs(g.vsScore[0], g.vsScore[1]);
 }
 function playFrame(g, x, now, dt, W, H, hands, view) {
@@ -953,18 +1003,17 @@ function playFrame(g, x, now, dt, W, H, hands, view) {
   if (g.game === 'trace') return traceFrame(g, x, now, dt, W, H, view);
   if (g.game === 'step') return stepFrame(g, x, now, W, H);
   if (g.game === 'balloon') {
-    const LEN = 40, r = Math.max(38, Math.min(W, H) * .1);
+    const LEN = 40, r = Math.max(34, Math.min(W, H) * .09);
     $('hudL').textContent = '🎈 ' + g.score + ' · ' + Math.max(0, Math.ceil(LEN - el)) + '초';
-    say('풍선을 터트려요!', false);
-    if (now > g.spawn) { g.spawn = now + 900; g.items.push({ x: r + Math.random() * (W - r * 2), y: H + r, v: H / 420, e: ['🎈', '🎈', '🫧', '⭐'][Math.random() * 4 | 0] }); }
-    const pts = hands.slice(); if (g.down) { pts.push(g.down); }
+    say(LEVEL_TIP[g.level], false);
+    if (now > g.spawn) { g.spawn = now + 900; g.items.push({ x: r + Math.random() * (W - r * 2), y: H + r, v: H / 420, c: balloonColor(g.level) }); }
+    const pts = hands.slice(); if (g.down) { pts.push({ x: g.down.x, y: g.down.y, r: 22, hand: g.down.x < W / 2 ? 'L' : 'R' }); }
     g.items = g.items.filter(b => {
       b.y -= b.v * dt / 16;
-      if (b.y < -r) return false;
-      if (pts.some(p => Math.hypot(p.x - b.x, p.y - b.y) < r * 1.1)) { g.score++; burst(b.x, b.y); beep(700 + Math.random() * 300, 80); return false; }
-      x.font = r * 1.7 + 'px serif'; x.fillText(b.e, b.x, b.y);
-      return true;
+      if (b.y < -r * 2) return false;
+      return balloonStep(g, x, b, pts, r, now, d => { g.score = Math.max(0, g.score + d); });
     });
+    drawMsg(g, x, now);
     g.down = null;
     if (el >= LEN) finish(g.score);
   } else if (g.game === 'balance') {
@@ -1029,11 +1078,17 @@ function exitTv() {
 }
 document.querySelectorAll('[data-game]').forEach(b => b.addEventListener('click', () => {
   pickGame = b.dataset.game; $('pickTitle').textContent = b.textContent.trim();
+  $('pickLevel').hidden = pickGame !== 'balloon';
   $('pick').hidden = false; $('pickSolo').focus();
 }));
 let pickGame = 'balloon';
-$('pickSolo').addEventListener('click', () => { $('pick').hidden = true; enterTv(); start(pickGame); });
-$('pickVs').addEventListener('click', () => { $('pick').hidden = true; setMode('landscape'); enterTv(); start(pickGame, { vs: true }); });
+let pickLevel = 'easy';
+document.querySelectorAll('[data-lvl]').forEach(b => b.addEventListener('click', () => {
+  pickLevel = b.dataset.lvl;
+  document.querySelectorAll('[data-lvl]').forEach(q => q.setAttribute('aria-checked', String(q === b)));
+}));
+$('pickSolo').addEventListener('click', () => { $('pick').hidden = true; enterTv(); start(pickGame, { level: pickLevel }); });
+$('pickVs').addEventListener('click', () => { $('pick').hidden = true; setMode('landscape'); enterTv(); start(pickGame, { vs: true, level: pickLevel }); });
 $('pickCancel').addEventListener('click', () => { $('pick').hidden = true; });
 $('quit').addEventListener('click', () => { stop(); $('turn').hidden = true; $('home').hidden = false; exitTv(); });
 $('again').addEventListener('click', () => { enterTv(); start(current, currentOpts); });
