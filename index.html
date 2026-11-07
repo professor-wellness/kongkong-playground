@@ -22,7 +22,7 @@ h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2.5rem, 12v
 .game { font-family: var(--display); font-size: 1.625rem; color: var(--ink); background: var(--paper); border: 3px solid var(--line); border-radius: 20px; box-shadow: 0 6px 0 var(--line); padding: 14px; cursor: pointer; display: grid; justify-items: center; gap: 2px; }
 .game:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--line); }
 .game span { font-size: 4.25rem; line-height: 1.15; }
-.game:nth-child(1) { background: #ffe0e6; } .game:nth-child(2) { background: #fff1b8; } .game:nth-child(3) { background: #d8f5c9; } .game:nth-child(4) { background: #dcdcff; } .game:nth-child(5) { background: #d9f6f2; } .game:nth-child(6) { background: #ffe3c7; } .game:nth-child(7) { background: #f6dcc0; grid-column: 1 / -1; }
+.game:nth-child(1) { background: #ffe0e6; } .game:nth-child(2) { background: #dcdcff; } .game:nth-child(3) { background: #d9f6f2; } .game:nth-child(4) { background: #ffe3c7; } .game:nth-child(5) { background: #f6dcc0; grid-column: 1 / -1; }
 button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
 .mode { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-family: var(--display); font-size: 1.125rem; }
 .mode button { font-family: var(--display); font-size: 1.125rem; color: var(--ink); background: var(--paper); border: 3px solid var(--line); border-radius: 999px; padding: 4px 16px; cursor: pointer; }
@@ -75,8 +75,6 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
   <p class="inapp" id="inapp" hidden>카카오톡 안에서 열렸어요. 여기서는 가로 화면과 전체 화면이 안 될 수 있어요.<a id="openOut" href="#">Chrome으로 열기</a></p>
   <div class="games">
     <button class="game" type="button" data-game="balloon"><span aria-hidden="true">🎈</span>풍선 팡팡</button>
-    <button class="game" type="button" data-game="balance"><span aria-hidden="true">🐣</span>황새 다리</button>
-    <button class="game" type="button" data-game="poses"><span aria-hidden="true">🦒</span>동물 따라쟁이</button>
     <button class="game" type="button" data-game="step"><span aria-hidden="true">👣</span>콩콩 스텝</button>
     <button class="game" type="button" data-game="trace"><span aria-hidden="true">🧘</span>자세 틀 따라 하기</button>
     <button class="game" type="button" data-game="race"><span aria-hidden="true">🏎️</span>씽씽 레이싱</button>
@@ -100,12 +98,12 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
 
 <div id="pick" role="dialog" aria-modal="true" aria-labelledby="pickTitle" hidden>
   <div class="pick-box">
-    <h2 id="pickTitle">풍선 팡팡</h2>
+    <h2 id="pickTitle"></h2>
     <div class="pick-row">
       <button type="button" id="pickSolo"><span aria-hidden="true">🙋</span>혼자 하기</button>
       <button type="button" id="pickVs"><span aria-hidden="true">👫</span>둘이 겨루기</button>
     </div>
-    <p>둘이 겨루기는 화면이 가로로 바뀌어요. 두 사람이 화면 왼쪽과 오른쪽에 나란히 서요.</p>
+    <p>둘이 겨루기는 화면이 가로로 바뀌어요. 두 사람이 화면 왼쪽과 오른쪽에 나란히 서서, 같은 문제로 점수를 겨뤄요.</p>
     <button type="button" class="pick-cancel" id="pickCancel">닫기</button>
   </div>
 </div>
@@ -277,7 +275,10 @@ function beep(f, ms) {
   } catch (e) {}
 }
 let lastSpoken = '';
+let SUB = null, DPR = 1;
+function hud(t) { if (!SUB) $('hudL').textContent = t; }
 function say(t, voice = true) {
+  if (SUB) return;
   $('sayText').textContent = t; $('say').hidden = !t;
   if (!voice || t === lastSpoken) return;
   lastSpoken = t;
@@ -329,6 +330,7 @@ const halfCanvas = [document.createElement('canvas'), document.createElement('ca
 function cropHalf(v, i) {
   const c = halfCanvas[i], w = Math.floor(v.videoWidth / 2), h = v.videoHeight;
   if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+  c.videoWidth = w; c.videoHeight = h;
   c.getContext('2d').drawImage(v, i === 0 ? w : 0, 0, w, h, 0, 0, w, h);
   return c;
 }
@@ -348,7 +350,7 @@ async function start(game, opts = {}) {
   $('home').hidden = true; $('end').hidden = true; $('play').hidden = false;
   $('hudL').textContent = ''; say('잠깐만 기다려요', false);
   beep(660, 80);
-  const g = G = { game, vs: !!opts.vs, lms: [null, null], vsScore: [0, 0], cam: false, stream: null, pose: null, lm: null, phase: 'ready', t0: performance.now(), hold: 0, score: 0, items: [], sparks: [], last: performance.now(), down: null, seq: [], idx: 0, poseHold: 0, spawn: 0 };
+  const g = G = { game, vs: !!opts.vs, lms: [null, null], raw: [null, null], players: opts.vs && game !== 'balloon' ? [0, 1].map(i => ({ game, side: i, sub: true, cam: false, lm: null, v: halfCanvas[i], sparks: [], score: 0, t0: 0 })) : null, vsScore: [0, 0], cam: false, stream: null, pose: null, lm: null, phase: 'ready', t0: performance.now(), hold: 0, score: 0, items: [], sparks: [], last: performance.now(), down: null, seq: [], idx: 0, poseHold: 0, spawn: 0 };
   const toTouch = why => {
     if (g.stream) g.stream.getTracks().forEach(t => t.stop());
     g.stream = null; g.cam = false; $('vid').srcObject = null;
@@ -384,8 +386,8 @@ async function start(game, opts = {}) {
       if (G !== g) return;
       const both = async () => {
         const v = $('vid');
-        await g.pose.send({ image: cropHalf(v, 0) }); g.lms[0] = fromHalf(poseResult, .5);
-        await g.pose2.send({ image: cropHalf(v, 1) }); g.lms[1] = fromHalf(pose2Result, 0);
+        await g.pose.send({ image: cropHalf(v, 0) }); g.raw[0] = poseResult; g.lms[0] = fromHalf(poseResult, .5);
+        await g.pose2.send({ image: cropHalf(v, 1) }); g.raw[1] = pose2Result; g.lms[1] = fromHalf(pose2Result, 0);
       };
       await Promise.race([both(), limit(30000)]);
       if (G !== g) return;
@@ -410,6 +412,7 @@ function stop() {
   lastSpoken = '';
 }
 function finish(n) {
+  if (SUB) { SUB.done = true; SUB.result = n; return; }
   const game = G.game, s = starsFor(game, n);
   stop();
   total += s;
@@ -422,8 +425,8 @@ function finish(n) {
   [660, 880, 1175].forEach((f, i) => setTimeout(() => beep(f, 180), i * 160));
   try { speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance('참 잘했어요'), { lang: 'ko-KR' })); } catch (e) {}
 }
-function finishVs(a, b) {
-  const s = starsFor('balloon', Math.max(a, b)), res = vsResult(a, b);
+function finishVs(a, b, game = 'balloon') {
+  const s = starsFor(game, Math.max(a, b)), res = vsResult(a, b);
   stop();
   total += s;
   try { localStorage.setItem(KEY, String(total)); } catch (e) {}
@@ -435,7 +438,7 @@ function finishVs(a, b) {
   [660, 880, 1175].forEach((f, i) => setTimeout(() => beep(f, 180), i * 160));
   try { speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance($('endText').textContent), { lang: 'ko-KR' })); } catch (e) {}
 }
-function burst(x, y) { for (let i = 0; i < 12; i++) { const a = i / 12 * 6.28; G.sparks.push({ x, y, dx: Math.cos(a) * 5, dy: Math.sin(a) * 5, life: 22 }); } }
+function burst(x, y) { const to = SUB ? SUB.sparks : G.sparks; for (let i = 0; i < 12; i++) { const a = i / 12 * 6.28; to.push({ x, y, dx: Math.cos(a) * 5, dy: Math.sin(a) * 5, life: 22 }); } }
 
 function frame(now) {
   const g = G; if (!g) return;
@@ -443,9 +446,11 @@ function frame(now) {
   if (c.width !== W * dpr) { c.width = W * dpr; c.height = H * dpr; }
   const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0);
   const dt = now - g.last; g.last = now;
-  const v = $('vid');
+  DPR = dpr;
+  const v = $('vid'), split = !!g.players;
   let view = null, hands = [], rings = [];
-  if (g.cam && v.videoWidth) {
+  if (split) vsHalves(g, x, now, dt, W, H);
+  else if (g.cam && v.videoWidth) {
     view = coverView(v.videoWidth, v.videoHeight, W, H);
     x.save(); x.translate(W, 0); x.scale(-1, 1); x.drawImage(v, view.ox, view.oy, view.dw, view.dh); x.restore();
     (g.vs ? g.lms : [g.lm]).forEach((lm, who) => {
@@ -460,16 +465,7 @@ function frame(now) {
     x.fillStyle = '#8fdc72'; x.fillRect(0, H * .8, W, H * .2);
   }
   x.textAlign = 'center'; x.textBaseline = 'middle';
-  const RING = ['#4f8cff', '#ff9a3c'];
-  rings.forEach(q => {
-    x.save();
-    x.shadowColor = 'rgba(0, 0, 0, .35)'; x.shadowBlur = 6;
-    x.fillStyle = q.who >= 0 ? RING[q.who] + '40' : 'rgba(255, 255, 255, .22)';
-    x.beginPath(); x.arc(q.x, q.y, q.r, 0, 7); x.fill();
-    x.lineWidth = 4; x.strokeStyle = '#ffffff'; x.stroke();
-    if (q.who >= 0) { x.shadowBlur = 0; x.lineWidth = 3; x.strokeStyle = RING[q.who]; x.beginPath(); x.arc(q.x, q.y, q.r - 4, 0, 7); x.stroke(); }
-    x.restore();
-  });
+  drawRings(x, rings);
 
   const needTurn = screenMode === 'landscape' && H > W && (g.phase === 'calib' || g.phase === 'count');
   $('turn').hidden = !needTurn;
@@ -480,7 +476,7 @@ function frame(now) {
   } else if (g.notice && now < g.t0) {
     say(g.notice, false);
   } else if (g.phase === 'calib' && g.vs) {
-    const a = upperBody(g.lms[0]), b = upperBody(g.lms[1]), ok = a && b;
+    const a = NEED[g.game](g.raw[0]), b = NEED[g.game](g.raw[1]), ok = a && b;
     x.fillStyle = 'rgba(255, 253, 245, .9)'; x.fillRect(W / 2 - 3, 0, 6, H);
     say(ok ? '좋아요, 그대로 있어요' : !a && !b ? '두 사람이 왼쪽, 오른쪽에 서요' : !a ? '파랑 친구, 왼쪽에 서요' : '주황 친구, 오른쪽에 서요');
     if (ok) { g.calibOk = g.calibOk ?? now; if (now - g.calibOk > 1200) { g.phase = 'count'; g.t0 = now; } } else g.calibOk = null;
@@ -490,24 +486,91 @@ function frame(now) {
     if (ok) { g.calibOk = g.calibOk ?? now; if (now - g.calibOk > 1200) { g.phase = 'count'; g.t0 = now; } } else g.calibOk = null;
   } else if (g.phase === 'count') {
     const left = 3 - Math.floor((now - g.t0) / 1000);
-    if (left > 0) { say(g.vs ? '내 쪽 풍선을 더 많이 터트려요' : INTRO[g.game]); x.font = '120px Jua, sans-serif'; x.fillStyle = '#23395b'; x.fillText(left, W / 2, H * .42); }
+    if (left > 0) { say(g.vs ? (g.game === 'balloon' ? '내 쪽 풍선을 더 많이 터트려요' : '같은 문제로 점수를 겨뤄요') : INTRO[g.game]); x.font = '120px Jua, sans-serif'; x.fillStyle = '#23395b'; x.fillText(left, W / 2, H * .42); }
     else {
       g.phase = 'play'; g.t0 = now; beep(880, 200);
-      if (g.vs) { g.items = []; g.vsScore = [0, 0]; g.spawn = 0; }
-      if (g.game === 'poses') { g.seq = Array.from({ length: 5 }, (_, i) => CARDS[i % 3]).sort(() => Math.random() - .5); }
-      if (g.game === 'trace') { g.seq = [...SHAPES].sort(() => Math.random() - .5).slice(0, 5); g.idx = 0; g.mode = 'ready'; g.modeT = now; g.hold = 0; g.miss = 0; g.okMs = 0; }
-      if (g.game === 'hoop') { g.shot = {}; g.ball = null; g.px2 = .5; g.score = 0; g.msg = null; }
-      if (g.game === 'race') { g.carX = .5; g.steer = 0; g.road = 0; g.items = []; g.spawn = now + 600; g.crash = 0; g.score = 0; }
-      if (g.game === 'step') {
-        g.chart = makeChart(20); g.taps = {}; g.flash = null; g.prevState = 'center';
-        if (g.cam && g.lm) { g.center = 1 - (g.lm[27].x + g.lm[28].x) / 2; g.unit = Math.abs(g.lm[11].x - g.lm[12].x) || .1; }
-      }
+      if (g.players) {
+        const shared = { seq: [...SHAPES].sort(() => Math.random() - .5).slice(0, 5), chart: makeChart(20), seed: Math.random() * 4e9 >>> 0 };
+        g.players.forEach(P => initPlay(P, now, shared));
+      } else if (g.vs) { g.items = []; g.vsScore = [0, 0]; g.spawn = 0; }
+      else initPlay(g, now);
     }
+  } else if (g.phase === 'play' && split) {
+    if (g.players.every(P => P.done)) finishVs(g.players[0].result, g.players[1].result, g.game);
   } else if (g.phase === 'play') playFrame(g, x, now, dt, W, H, hands, view);
 
   g.sparks = g.sparks.filter(s => s.life-- > 0);
   x.fillStyle = '#ffcf3f'; g.sparks.forEach(s => { s.x += s.dx; s.y += s.dy; x.fillRect(s.x, s.y, 8, 8); });
   if (G === g) requestAnimationFrame(frame);
+}
+function seeded(a) { return () => { a = a + 0x6D2B79F5 >>> 0; let t = a; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function initPlay(g, now, shared) {
+  g.t0 = now; g.score = 0;
+  if (g.game === 'poses') { g.seq = Array.from({ length: 5 }, (_, i) => CARDS[i % 3]).sort(() => Math.random() - .5); }
+  if (g.game === 'trace') { g.seq = shared ? shared.seq : [...SHAPES].sort(() => Math.random() - .5).slice(0, 5); g.idx = 0; g.mode = 'ready'; g.modeT = now; g.hold = 0; g.miss = 0; g.okMs = 0; }
+  if (g.game === 'hoop') { g.shot = {}; g.ball = null; g.px2 = .5; g.msg = null; }
+  if (g.game === 'race') { g.carX = .5; g.steer = 0; g.road = 0; g.items = []; g.spawn = now + 600; g.crash = 0; g.rnd = shared ? seeded(shared.seed) : null; }
+  if (g.game === 'step') {
+    g.chart = shared ? shared.chart.map(n => ({ ...n })) : makeChart(20); g.taps = {}; g.flash = null; g.prevState = 'center';
+    if (g.cam && g.lm) { g.center = 1 - (g.lm[27].x + g.lm[28].x) / 2; g.unit = Math.abs(g.lm[11].x - g.lm[12].x) || .1; }
+  }
+}
+const RING = ['#4f8cff', '#ff9a3c'];
+function drawRings(x, rings) {
+  rings.forEach(q => {
+    x.save();
+    x.shadowColor = 'rgba(0, 0, 0, .35)'; x.shadowBlur = 6;
+    x.fillStyle = q.who >= 0 ? RING[q.who] + '40' : 'rgba(255, 255, 255, .22)';
+    x.beginPath(); x.arc(q.x, q.y, q.r, 0, 7); x.fill();
+    x.lineWidth = 4; x.strokeStyle = '#ffffff'; x.stroke();
+    if (q.who >= 0) { x.shadowBlur = 0; x.lineWidth = 3; x.strokeStyle = RING[q.who]; x.beginPath(); x.arc(q.x, q.y, q.r - 4, 0, 7); x.stroke(); }
+    x.restore();
+  });
+}
+/* 둘이 겨루기(풍선 외): 화면 반쪽마다 그 쪽 사람의 영상과 놀이를 따로 그린다 */
+function vsHalves(g, x, now, dt, W, H) {
+  const half = W / 2, v = $('vid');
+  g.players.forEach((P, i) => {
+    P.cam = g.cam; P.lm = g.raw[i];
+    x.save(); x.translate(i * half, 0); x.beginPath(); x.rect(0, 0, half, H); x.clip();
+    let view = null; const hands = [], rings = [];
+    if (g.cam && v.videoWidth) {
+      const c = cropHalf(v, i);
+      view = coverView(c.width, c.height, half, H);
+      x.save(); x.translate(half, 0); x.scale(-1, 1); x.drawImage(c, view.ox, view.oy, view.dw, view.dh); x.restore();
+      if (P.lm) {
+        [15, 16, 19, 20].forEach(k => { if (P.lm[k].visibility > .3) hands.push(mapPoint(P.lm[k], view)); });
+        palmsOf(P.lm, view).forEach(q => { hands.push(q); rings.push({ ...q, who: i }); });
+      }
+    } else {
+      x.fillStyle = '#bdeafe'; x.fillRect(0, 0, half, H);
+      x.fillStyle = '#8fdc72'; x.fillRect(0, H * .8, half, H * .2);
+    }
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    drawRings(x, rings);
+    if (g.phase === 'play' && !P.done) {
+      SUB = P;
+      try { playFrame(P, x, now, dt, half, H, hands, view); } finally { SUB = null; }
+      x.textAlign = 'center'; x.textBaseline = 'middle';
+    }
+    P.sparks = P.sparks.filter(s => s.life-- > 0);
+    x.fillStyle = '#ffcf3f'; P.sparks.forEach(s => { s.x += s.dx; s.y += s.dy; x.fillRect(s.x, s.y, 8, 8); });
+    if (g.phase === 'play') {
+      const t = ['파랑', '주황'][i] + ' ' + (P.done ? P.result : P.score);
+      x.font = '26px Jua, sans-serif';
+      const w = x.measureText(t).width + 32, y0 = 60;
+      x.fillStyle = RING[i]; x.beginPath(); x.roundRect(half / 2 - w / 2, y0, w, 40, 20); x.fill();
+      x.lineWidth = 3; x.strokeStyle = '#23395b'; x.stroke();
+      x.fillStyle = '#ffffff'; x.fillText(t, half / 2, y0 + 21);
+      if (P.done) {
+        x.fillStyle = 'rgba(255, 253, 245, .82)'; x.fillRect(0, H * .4, half, 70);
+        x.font = '28px Jua, sans-serif'; x.fillStyle = '#23395b'; x.fillText('다 했어요! 친구를 기다려요', half / 2, H * .4 + 36);
+      }
+    }
+    x.restore();
+  });
+  x.fillStyle = 'rgba(255, 253, 245, .9)'; x.fillRect(half - 3, 0, 6, H);
+  if (g.phase === 'play') { hud('파랑 · 주황 겨루기'); say('', false); }
 }
 const FALL = 1800, KIND = { center: '두 발 모아요', both: '두 발 벌려요', left: '왼쪽으로 콩', right: '오른쪽으로 콩' };
 function stepState(g, now) {
@@ -549,7 +612,7 @@ function stepFrame(g, x, now, W, H) {
     if (n.kind === 'both') { draw(lane[0], '⬅️'); draw(lane[2], '➡️'); }
   }
   const next = g.chart.find(n => !n.done);
-  $('hudL').textContent = '👣 ' + g.score;
+  hud('👣 ' + g.score);
   say(next ? KIND[next.kind] : '', false);
   if (g.flash && now - g.flash.t < 500) { x.font = '48px Jua, sans-serif'; x.fillStyle = '#23395b'; x.fillText(g.flash.text, W / 2, H * .55); }
   if (!next && t > g.chart[g.chart.length - 1].t + 800) finish(g.score);
@@ -574,10 +637,11 @@ function outlineFor(p, W, H, dpr) {
   x.globalCompositeOperation = 'destination-out'; body(0);
   outlineCache.set(key, c); return c;
 }
+const HOLD_MS = 3000;
 const SEG_LINE = { aL: [11, 13], fL: [13, 15], aR: [12, 14], fR: [14, 16], tL: [23, 25], sL: [25, 27], tR: [24, 26], sR: [26, 28] };
 function traceFrame(g, x, now, dt, W, H, view) {
-  const p = g.seq[g.idx], c = $('cv'), dpr = c.width / W;
-  const v = $('vid'), aspect = g.cam && v.videoWidth ? v.videoWidth / v.videoHeight : 1;
+  const p = g.seq[g.idx], dpr = DPR;
+  const v = g.v || $('vid'), aspect = g.cam && v.videoWidth ? v.videoWidth / v.videoHeight : 1;
   const r = g.cam ? (g.lm && fullBody(g.lm) ? matchShape(g.lm, p, aspect) : { ok: false, bad: [] }) : { ok: !!g.holding, bad: [] };
   x.save();
   const art = outlineFor(p, W, H, dpr);
@@ -597,7 +661,7 @@ function traceFrame(g, x, now, dt, W, H, view) {
     g.mode = 'rest'; g.modeT = now; g.lastOk = ok;
   };
   if (g.mode === 'ready') {
-    $('hudL').textContent = (g.idx + 1) + ' / 5';
+    hud((g.idx + 1) + ' / 5');
     say(p.name + ' 따라 해요 ' + Math.max(1, Math.ceil(5 - el / 1000)) + '초', false);
     if (el < 300) say(p.name + ' 따라 해요', true);
     g.okMs = r.ok ? g.okMs + dt : 0;
@@ -606,10 +670,10 @@ function traceFrame(g, x, now, dt, W, H, view) {
   } else if (g.mode === 'hold') {
     if (r.ok) { g.hold += dt; g.miss = 0; } else g.miss += dt;
     const bw = W * .7, bx = (W - bw) / 2, by = H * (W > H ? .75 : .86);
-    x.fillStyle = '#fffdf5'; x.fillRect(bx, by, bw, 22); x.fillStyle = '#ffcf3f'; x.fillRect(bx, by, bw * Math.min(1, g.hold / 5000), 22);
+    x.fillStyle = '#fffdf5'; x.fillRect(bx, by, bw, 22); x.fillStyle = '#ffcf3f'; x.fillRect(bx, by, bw * Math.min(1, g.hold / HOLD_MS), 22);
     x.strokeStyle = '#23395b'; x.lineWidth = 3; x.strokeRect(bx, by, bw, 22);
-    say(r.ok ? '그대로! ' + Math.max(1, Math.ceil(5 - g.hold / 1000)) + '초' : '다시 맞춰요', false);
-    if (g.hold >= 5000) next(true); else if (g.miss > 1500) next(false);
+    say(r.ok ? '그대로! ' + Math.max(1, Math.ceil((HOLD_MS - g.hold) / 1000)) + '초' : '다시 맞춰요', false);
+    if (g.hold >= HOLD_MS) next(true); else if (g.miss > 1500) next(false);
   } else {
     say(g.lastOk ? '참 잘했어요!' : '괜찮아요, 다음 자세!', false);
     if (el > 1300) {
@@ -628,7 +692,7 @@ function drawCar(x, cx, cy, w, tilt) {
   x.restore();
 }
 function raceFrame(g, x, now, dt, W, H, view) {
-  const LEN = 45, el = (now - g.t0) / 1000, v = $('vid');
+  const LEN = 45, el = (now - g.t0) / 1000, v = g.v || $('vid');
   const seen = g.cam ? upperBody(g.lm) : true;
   let target = 0, deg = 0;
   if (g.cam && seen) { deg = steerAngle(g.lm, v.videoWidth / v.videoHeight); target = steerValue(deg); }
@@ -645,8 +709,8 @@ function raceFrame(g, x, now, dt, W, H, view) {
   const carW = Math.min(roadW * .17, 74), carY = H * .76, carPx = left + roadW * g.carX;
   if (now > g.spawn) {
     g.spawn = now + Math.max(650, 1100 - el * 8);
-    const lane = Math.random() * 3 | 0;
-    g.items.push({ f: (lane + .5) / 3, y: -50, e: Math.random() < .68 ? '⭐' : '🚧' });
+    const rnd = g.rnd || Math.random, lane = rnd() * 3 | 0;
+    g.items.push({ f: (lane + .5) / 3, y: -50, e: rnd() < .68 ? '⭐' : '🚧' });
   }
   const size = carW * 1.05;
   g.items = g.items.filter(it => {
@@ -672,7 +736,7 @@ function raceFrame(g, x, now, dt, W, H, view) {
   x.save(); x.translate(wx, wy); x.rotate(deg * Math.PI / 180);
   x.strokeStyle = seen ? '#ffcf3f' : '#fffdf5'; x.lineWidth = 9; x.beginPath(); x.arc(0, 0, wr, 0, 7); x.stroke();
   x.lineWidth = 6; x.beginPath(); x.moveTo(-wr, 0); x.lineTo(wr, 0); x.moveTo(0, 0); x.lineTo(0, wr); x.stroke(); x.restore();
-  $('hudL').textContent = '⭐ ' + g.score + ' · ' + Math.max(0, Math.ceil(LEN - el)) + '초';
+  hud('⭐ ' + g.score + ' · ' + Math.max(0, Math.ceil(LEN - el)) + '초');
   say(!seen ? '두 손을 보여 주세요' : now < g.crash ? '쿵! 조심조심' : g.cam ? '' : '왼쪽, 오른쪽을 꾹 눌러요', false);
   if (el >= LEN) finish(g.score);
 }
@@ -682,7 +746,7 @@ function drawBall(x, cx, cy, r) {
   x.beginPath(); x.arc(cx, cy, r, 0, 7); x.moveTo(cx - r, cy); x.lineTo(cx + r, cy); x.moveTo(cx, cy - r); x.lineTo(cx, cy + r); x.stroke();
 }
 function hoopFrame(g, x, now, dt, W, H) {
-  const LEN = 45, el = (now - g.t0) / 1000, v = $('vid');
+  const LEN = 45, el = (now - g.t0) / 1000, v = g.v || $('vid');
   const seen = g.cam ? bodyVisible(g.lm) : true;
   if (g.cam && seen) g.px2 += (aimX(g.lm) - g.px2) * .3;
   if (!g.cam && g.px !== undefined) g.px2 += (Math.max(.12, Math.min(.88, g.px / W)) - g.px2) * .3;
@@ -723,7 +787,7 @@ function hoopFrame(g, x, now, dt, W, H) {
     x.save(); x.translate(cx + pw, cy); x.scale(-1, 1); x.drawImage(v, 0, 0, pw, ph); x.restore();
     x.strokeStyle = '#23395b'; x.lineWidth = 3; x.strokeRect(cx, cy, pw, ph);
   }
-  $('hudL').textContent = '🏀 ' + g.score + ' · ' + Math.max(0, Math.ceil(LEN - el)) + '초';
+  hud('🏀 ' + g.score + ' · ' + Math.max(0, Math.ceil(LEN - el)) + '초');
   say(!seen ? '허리까지 보여 주세요' : g.ball ? '' : g.cam ? (g.shot.armed ? '번쩍! 뛰면서 올려요' : '손을 내려요') : '눌러서 슛!', false);
   if (el >= LEN && !g.ball) finish(g.score);
 }
@@ -839,11 +903,12 @@ function exitTv() {
   try { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); } catch (e) {}
 }
 document.querySelectorAll('[data-game]').forEach(b => b.addEventListener('click', () => {
-  if (b.dataset.game === 'balloon') { $('pick').hidden = false; $('pickSolo').focus(); return; }
-  enterTv(); start(b.dataset.game);
+  pickGame = b.dataset.game; $('pickTitle').textContent = b.textContent.trim();
+  $('pick').hidden = false; $('pickSolo').focus();
 }));
-$('pickSolo').addEventListener('click', () => { $('pick').hidden = true; enterTv(); start('balloon'); });
-$('pickVs').addEventListener('click', () => { $('pick').hidden = true; setMode('landscape'); enterTv(); start('balloon', { vs: true }); });
+let pickGame = 'balloon';
+$('pickSolo').addEventListener('click', () => { $('pick').hidden = true; enterTv(); start(pickGame); });
+$('pickVs').addEventListener('click', () => { $('pick').hidden = true; setMode('landscape'); enterTv(); start(pickGame, { vs: true }); });
 $('pickCancel').addEventListener('click', () => { $('pick').hidden = true; });
 $('quit').addEventListener('click', () => { stop(); $('turn').hidden = true; $('home').hidden = false; exitTv(); });
 $('again').addEventListener('click', () => { enterTv(); start(current, currentOpts); });
@@ -851,13 +916,18 @@ $('back').addEventListener('click', () => { $('end').hidden = true; $('home').hi
 const cv = $('cv');
 cv.addEventListener('pointerdown', e => {
   if (!G) return;
-  G.down = { x: e.offsetX, y: e.offsetY }; G.holding = true; G.px = e.offsetX;
-  if (G.game === 'step' && G.taps) {
-    const third = cv.clientWidth / 3, k = e.offsetX < third ? 'left' : e.offsetX > third * 2 ? 'right' : 'center', t = performance.now();
-    G.taps[k] = t; G.taps.last = t; G.taps.lastKind = k;
+  let T = G, ox = e.offsetX, width = cv.clientWidth;
+  if (G.players) { const side = ox < width / 2 ? 0 : 1; T = G.players[side]; width /= 2; ox -= side * width; }
+  T.down = { x: ox, y: e.offsetY }; T.holding = true; T.px = ox;
+  if (T.game === 'step' && T.taps) {
+    const third = width / 3, k = ox < third ? 'left' : ox > third * 2 ? 'right' : 'center', t = performance.now();
+    T.taps[k] = t; T.taps.last = t; T.taps.lastKind = k;
   }
 });
-cv.addEventListener('pointermove', e => { if (G) G.px = e.offsetX; });
-['pointerup', 'pointercancel', 'pointerleave'].forEach(n => cv.addEventListener(n, () => { if (G) G.holding = false; }));
+cv.addEventListener('pointermove', e => {
+  if (!G) return;
+  if (G.players) { const w = cv.clientWidth / 2, side = e.offsetX < w ? 0 : 1; G.players[side].px = e.offsetX - side * w; } else G.px = e.offsetX;
+});
+['pointerup', 'pointercancel', 'pointerleave'].forEach(n => cv.addEventListener(n, () => { if (G) { G.holding = false; if (G.players) G.players.forEach(P => { P.holding = false; }); } }));
 </script>
 </body></html>
