@@ -32,6 +32,8 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
 #turn span { font-size: 5rem; line-height: 1; display: inline-block; animation: tilt 1.6s ease-in-out infinite; }
 @keyframes tilt { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
 @media (prefers-reduced-motion: reduce) { #turn span { animation: none; } }
+.inapp { margin: 0; background: var(--paper); border: 3px solid var(--berry); border-radius: 16px; padding: 12px 14px; display: grid; gap: 8px; }
+.inapp a { justify-self: start; font-family: var(--display); font-size: 1.125rem; color: var(--ink); background: var(--sun); border: 3px solid var(--line); border-radius: 999px; padding: 4px 16px; text-decoration: none; }
 .parent { background: var(--paper); border: 3px solid var(--line); border-radius: 16px; padding: 16px; }
 .parent h2 { font-family: var(--display); font-weight: 400; font-size: 1.25rem; margin: 0 0 6px; }
 .parent ul { margin: 0; padding-left: 1.1em; display: grid; gap: 4px; }
@@ -61,6 +63,7 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
     <button type="button" data-mode="landscape" aria-pressed="false">📺 가로 (TV)</button>
     <small id="modeHint">휴대폰으로 바로 할 때 쓰는 기본 화면입니다.</small>
   </div>
+  <p class="inapp" id="inapp" hidden>카카오톡 안에서 열렸어요. 여기서는 가로 화면과 전체 화면이 안 될 수 있어요.<a id="openOut" href="#">Chrome으로 열기</a></p>
   <div class="games">
     <button class="game" type="button" data-game="balloon"><span aria-hidden="true">🎈</span>풍선 팡팡</button>
     <button class="game" type="button" data-game="balance"><span aria-hidden="true">🐣</span>황새 다리</button>
@@ -77,6 +80,7 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
       <li>휴대폰을 고정하고 2m쯤 떨어져 온몸이 보이게 서면 가장 잘 됩니다.</li>
       <li>카메라 영상은 이 기기 안에서만 처리하고 저장하거나 전송하지 않습니다. 저장되는 것은 별 개수뿐입니다.</li>
       <li>자세 틀 놀이는 한 발로 서는 자세가 있으니 어른이 곁에서 살펴 주세요. 틀과 몸이 겹치지 않아도 팔다리 방향이 맞으면 인정합니다.</li>
+      <li>카카오톡 같은 앱 안에서 열면 일부 기능이 막힐 수 있어요. Chrome이나 삼성 인터넷으로 열어 주세요.</li>
       <li>TV로 크게 하려면 휴대폰 화면 미러링(삼성은 Smart View)을 켠 뒤 <b>가로 (TV)</b>를 고르고, 휴대폰을 옆으로 눕혀 TV 아래에 세워 주세요.</li>
       <li>콩콩 스텝은 양말을 벗고 미끄럽지 않은 바닥에서 해 주세요.</li>
       <li>놀이 한 판은 1분 안팎입니다. 몇 판 한 뒤에는 화면을 끄고 몸으로 놀아 주세요.</li>
@@ -678,6 +682,10 @@ function setMode(m) {
 }
 document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 setMode(screenMode);
+if (/KAKAOTALK/i.test(navigator.userAgent)) {
+  $('inapp').hidden = false;
+  $('openOut').href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
+}
 function enterTv() {
   if (screenMode !== 'landscape') return;
   const lock = () => { try { const p = screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape'); if (p) p.catch(() => {}); } catch (e) {} };
