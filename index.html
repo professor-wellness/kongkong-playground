@@ -381,6 +381,15 @@ function palmsOf(lm, view) {
   return out;
 }
 /* 둘이 겨루기: 영상 반쪽에서 찾은 관절을 전체 영상 좌표로 되돌린다 */
+/* 손 전용 인식: 손바닥 중심과 크기, 주먹 여부. 셀카 영상을 뒤집지 않고 넣으므로 왼손/오른손 표시는 바꿔 읽는다 */
+function handInfo(lm, label, aspect) {
+  const d = (a, b) => Math.hypot((lm[a].x - lm[b].x) * aspect, lm[a].y - lm[b].y);
+  const ids = [0, 5, 9, 13, 17];
+  const cx = ids.reduce((s, i) => s + lm[i].x, 0) / 5, cy = ids.reduce((s, i) => s + lm[i].y, 0) / 5;
+  let closed = 0;
+  [[8, 6], [12, 10], [16, 14], [20, 18]].forEach(([tip, pip]) => { if (d(tip, 0) < d(pip, 0) * 1.05) closed++; });
+  return { x: cx, y: cy, size: d(0, 9), fist: closed >= 3, hand: label === 'Left' ? 'R' : 'L' };
+}
 function fromHalf(lm, x0) { return lm ? lm.map(q => ({ x: x0 + q.x * .5, y: q.y, visibility: q.visibility })) : null; }
 function vsResult(a, b) { return a === b ? 'tie' : a > b ? 'blue' : 'orange'; }
 function judge(ms) { const a = Math.abs(ms); return a <= 200 ? 2 : a <= 400 ? 1 : 0; }
@@ -388,7 +397,7 @@ function starsFor(game, n) {
   const c = { balloon: [5, 12, 20], balance: [3, 6, 10], poses: [1, 3, 5], step: [8, 18, 28], trace: [1, 3, 5], race: [5, 12, 20], hoop: [4, 10, 18] }[game];
   return n >= c[2] ? 3 : n >= c[1] ? 2 : 1;
 }
-if (typeof module !== 'undefined') module.exports = { coverView, mapPoint, fullBody, upperBody, oneLeg, POSES, starsFor, footState, makeChart, judge, SHAPES, SEGS, shapeJoints, matchShape, userDirs, steerAngle, steerValue, bodyVisible, shotStep, aimX, isBasket, palmsOf, fromHalf, vsResult };
+if (typeof module !== 'undefined') module.exports = { coverView, mapPoint, fullBody, upperBody, oneLeg, POSES, starsFor, footState, makeChart, judge, SHAPES, SEGS, shapeJoints, matchShape, userDirs, steerAngle, steerValue, bodyVisible, shotStep, aimX, isBasket, palmsOf, fromHalf, vsResult, handInfo };
 </script>
 
 <script>
@@ -445,6 +454,43 @@ function loadPose() {
   });
   posePromise.catch(() => { posePromise = null; });
   return posePromise;
+}
+let handsPromise = null, handsResult = null;
+function loadHands() {
+  if (handsPromise) return handsPromise;
+  handsPromise = new Promise((res, rej) => {
+    const add = src => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error('script')); document.head.append(s); });
+    const urls = {};
+    loadStep = '손 인식 자료 내려받기';
+    add('hands/hands_assets.js').then(() => add('hands/hands.js')).then(async () => {
+      loadStep = '손 인식 준비';
+      await new Promise(r => setTimeout(r, 30));
+      for (const [name, b64] of Object.entries(window.HANDS_ASSETS)) {
+        const bin = atob(b64), bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        urls[name] = URL.createObjectURL(new Blob([bytes]));
+      }
+      const hands = new window.Hands({ locateFile: f => urls[f] || 'hands/' + f });
+      hands.setOptions({ maxNumHands: 2, modelComplexity: 0, minDetectionConfidence: .6, minTrackingConfidence: .5 });
+      hands.onResults(r => { handsResult = { lms: r.multiHandLandmarks || [], hd: r.multiHandedness || [] }; });
+      await hands.initialize();
+      res(hands);
+    }).catch(rej);
+  });
+  handsPromise.catch(() => { handsPromise = null; });
+  return handsPromise;
+}
+/* 주먹 판정은 3번 연속 같은 결과가 나와야 바꿔서 깜빡임을 막는다 */
+function readHands(g, aspect) {
+  const r = handsResult; if (!r) { g.handList = []; return; }
+  const list = r.lms.map((lm, i) => handInfo(lm, (r.hd[i] && r.hd[i].label) || 'Left', aspect));
+  g.fistMemo = g.fistMemo || {};
+  list.forEach(h => {
+    const key = h.hand + (g.vs ? (h.x > .5 ? 0 : 1) : ''), m = g.fistMemo[key] || (g.fistMemo[key] = { state: false, run: 0 });
+    if (h.fist === m.state) m.run = 0; else if (++m.run >= 3) { m.state = h.fist; m.run = 0; }
+    h.fist = m.state;
+  });
+  g.handList = list;
 }
 let pose2Promise = null, pose2Result = null;
 function loadPose2() {
@@ -506,6 +552,23 @@ async function start(game, opts = {}) {
   requestAnimationFrame(frame);
   try {
     const limit = ms => new Promise((_, no) => setTimeout(() => no(new Error('timeout')), ms));
+    if (game === 'balloon') {
+      g.hands = await Promise.race([loadHands(), limit(60000)]);
+      if (G !== g) return;
+      g.hands.setOptions({ maxNumHands: g.vs ? 4 : 2 });
+      loadStep = '첫 인식';
+      const waitFrom = performance.now();
+      while (!$('vid').videoWidth && G === g) {
+        if (performance.now() - waitFrom > 15000) throw new Error('카메라 영상이 들어오지 않아요');
+        await new Promise(r => setTimeout(r, 100));
+      }
+      const v = $('vid'), once = async () => { handsResult = null; await g.hands.send({ image: v }); readHands(g, v.videoWidth / v.videoHeight); };
+      await Promise.race([once(), limit(30000)]);
+      if (G !== g) return;
+      g.phase = 'calib'; g.t0 = performance.now();
+      (async () => { while (G === g) { try { await once(); } catch (e) {} await new Promise(r => requestAnimationFrame(r)); } })();
+      return;
+    }
     g.pose = await Promise.race([loadPose(), limit(60000)]);
     if (G !== g) return;
     loadStep = '첫 인식';
@@ -587,7 +650,13 @@ function frame(now) {
   else if (g.cam && v.videoWidth) {
     view = coverView(v.videoWidth, v.videoHeight, W, H);
     x.save(); x.translate(W, 0); x.scale(-1, 1); x.drawImage(v, view.ox, view.oy, view.dw, view.dh); x.restore();
-    (g.vs ? g.lms : [g.lm]).forEach((lm, who) => {
+    if (g.hands) (g.handList || []).forEach(h => {
+      const p = mapPoint(h, view), who = g.vs ? (p.x < W / 2 ? 0 : 1) : 0;
+      const q = { x: p.x, y: p.y, r: Math.max(14, Math.min(42, h.size * view.dh * .55)), hand: h.hand, who, fist: h.fist };
+      rings.push({ ...q, who: g.vs ? who : -1, col: ringColor(g, q) });
+      if (!h.fist) hands.push(q);
+    });
+    else (g.vs ? g.lms : [g.lm]).forEach((lm, who) => {
       if (!lm) return;
       const own = [];
       palmsOf(lm, view).forEach(q => { own.push(q); rings.push({ ...q, who: g.vs ? who : -1, col: ringColor(g, q) }); });
@@ -607,6 +676,12 @@ function frame(now) {
     say('놀이 준비 중 ' + Math.floor((now - g.t0) / 1000) + '초 · ' + loadStep, false);
   } else if (g.notice && now < g.t0) {
     say(g.notice, false);
+  } else if (g.phase === 'calib' && g.hands) {
+    const L = g.handList || [], sides = [0, 1].map(i => L.some(h => (1 - h.x < .5 ? 0 : 1) === i));
+    const ok = g.vs ? sides[0] && sides[1] : L.length > 0;
+    if (g.vs) { x.fillStyle = 'rgba(255, 253, 245, .9)'; x.fillRect(W / 2 - 3, 0, 6, H); }
+    say(ok ? '좋아요! 손을 펴면 터지고, 주먹을 쥐면 쉬어요' : g.vs ? (!sides[0] && !sides[1] ? '두 사람 모두 손을 보여 주세요' : !sides[0] ? '파랑 친구, 손을 보여 주세요' : '주황 친구, 손을 보여 주세요') : '손바닥을 화면에 보여 주세요');
+    if (ok) { g.calibOk = g.calibOk ?? now; if (now - g.calibOk > 1500) { g.phase = 'count'; g.t0 = now; } } else g.calibOk = null;
   } else if (g.phase === 'calib' && g.vs) {
     const a = NEED[g.game](g.raw[0]), b = NEED[g.game](g.raw[1]), ok = a && b;
     x.fillStyle = 'rgba(255, 253, 245, .9)'; x.fillRect(W / 2 - 3, 0, 6, H);
@@ -690,10 +765,16 @@ function drawMsg(g, x, now) {
   x.font = '28px Jua, sans-serif'; x.lineWidth = 5; x.strokeStyle = '#fffdf5'; x.strokeText(g.msg.text, g.msg.x, g.msg.y - 50);
   x.fillStyle = '#23395b'; x.fillText(g.msg.text, g.msg.x, g.msg.y - 50);
 }
-const LEVEL_TIP = { easy: '풍선을 터트려요!', mid: '빨간 풍선만 터트려요!', hard: '파랑은 왼손, 분홍은 오른손!' };
+const LEVEL_TIP = { easy: '손을 펴서 풍선을 터트려요!', mid: '빨간 풍선만 터트려요!', hard: '파랑은 왼손, 분홍은 오른손!' };
 function drawRings(x, rings) {
   rings.forEach(q => {
     x.save();
+    if (q.fist) {
+      x.setLineDash([6, 6]); x.lineWidth = 4; x.strokeStyle = 'rgba(255, 255, 255, .85)';
+      x.beginPath(); x.arc(q.x, q.y, q.r * .8, 0, 7); x.stroke();
+      x.setLineDash([]); x.fillStyle = 'rgba(60, 70, 90, .35)'; x.fill();
+      x.restore(); return;
+    }
     x.shadowColor = 'rgba(0, 0, 0, .35)'; x.shadowBlur = 6;
     const col = q.col || (q.who >= 0 ? RING[q.who] : null);
     x.fillStyle = col ? col + '40' : 'rgba(255, 255, 255, .22)';
