@@ -146,7 +146,9 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
 .bloom { transform-box: fill-box; transform-origin: 50% 100%; animation: bloom 1.8s ease-out both; }
 @keyframes wave { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(8px); } }
 .wave { animation: wave 1.6s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .snow circle, .rain line, .twinkle, .fly, .flutter, .bloom, .wave { animation: none; } }
+@keyframes zz { 0%, 100% { opacity: 1; transform: translateY(0); } 50% { opacity: .45; transform: translateY(-6px); } }
+.zz { animation: zz 2.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .snow circle, .rain line, .twinkle, .fly, .flutter, .bloom, .wave, .zz { animation: none; } }
 [hidden] { display: none !important; }
 </style>
 
@@ -1358,9 +1360,9 @@ const ART = (() => {
       <path d="M-20,-14 L-14,-44 L12,-44 L18,-14 M-14,-44 L-2,-58 L12,-44 M-36,-24 L-20,-14 M34,-24 L18,-14" fill="none" stroke="${N.shellD}" stroke-width="3"/>
       <rect x="-42" y="-14" width="82" height="8" rx="4" fill="${N.shellD}"/>
       ${head(k, 48, -52, 24, f, N.turtle, N.shellD, `<circle cx="48" cy="-52" r="20" fill="${N.turtle}"/>${face(48, -57, m)}${face(61, -57, m)}
-      <circle cx="48" cy="-57" r="6.5" fill="none" stroke="${C.ink}" stroke-width="1.6"/><circle cx="61" cy="-57" r="6.5" fill="none" stroke="${C.ink}" stroke-width="1.6"/><path d="M54.5,-57 h0.1" stroke="${C.ink}" stroke-width="2"/>
-      ${mouth(56, -43, m)}<path d="M34,-66 q12,-10 26,-4" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>`)}
-      <path d="M70,-26 L76,0" stroke="#8a5a33" stroke-width="4" stroke-linecap="round"/><path d="M64,-30 q6,-8 8,4" fill="none" stroke="#8a5a33" stroke-width="4" stroke-linecap="round"/>
+      ${o.young ? '' : `<circle cx="48" cy="-57" r="6.5" fill="none" stroke="${C.ink}" stroke-width="1.6"/><circle cx="61" cy="-57" r="6.5" fill="none" stroke="${C.ink}" stroke-width="1.6"/><path d="M54.5,-57 h0.1" stroke="${C.ink}" stroke-width="2"/>`}
+      ${mouth(56, -43, m)}${o.young ? '' : `<path d="M34,-66 q12,-10 26,-4" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>`}`)}
+      ${o.young ? '' : `<path d="M70,-26 L76,0" stroke="#8a5a33" stroke-width="4" stroke-linecap="round"/><path d="M64,-30 q6,-8 8,4" fill="none" stroke="#8a5a33" stroke-width="4" stroke-linecap="round"/>`}
     </g>`;
   };
   /* ---- 새 장면 소품 ---- */
@@ -1389,7 +1391,62 @@ const ART = (() => {
     <rect x="300" y="20" width="130" height="110" rx="8" fill="#1c2750" stroke="#8a5a33" stroke-width="10"/><path d="M365,20 v110 M300,75 h130" stroke="#8a5a33" stroke-width="6"/><circle cx="335" cy="52" r="14" fill="#fff6c8"/><circle cx="330" cy="48" r="13" fill="#1c2750"/>
     <circle class="twinkle" cx="400" cy="45" r="2.5" fill="#fff8d0"/><circle class="twinkle" cx="388" cy="100" r="2" fill="#fff8d0" style="animation-delay:-1s"/>
     <rect x="-60" y="196" width="200" height="50" rx="10" fill="#8a5a33"/><rect x="-50" y="180" width="190" height="30" rx="10" fill="#7fa3e0"/><ellipse cx="-30" cy="182" rx="26" ry="12" fill="#fff"/>`;
-  return { faces, squirrel, bunny, bear, tree, oak, acorn, pile, leaves, snowfall, autumn, winter, sky, wrap, lion, lioness, duck, raccoon, turtle, meadow, bush, rainy, cloud, rain, river, log, rock, den, rainbow, night, stars, fireflies, thought, cottage, fence, flower, pot, broken, butterflies, room };
+  /* ---- 이솝 이야기 등장인물 ---- */
+  const F2 = { mouse: '#a9a3ab', mouseD: '#857f88', fox: '#e8743b', foxD: '#c45a28', crane: '#f7f6f1', craneD: '#2f3440', neck: '#c9ccd3', beakC: '#e0b04a', leg: '#7a7f8a', cap: '#e8384f' };
+  const mouse = (x, y, s = 1, o = {}) => {
+    const f = o.flip ? -1 : 1, m = o.mood || 'happy', k = o.k || 'J';
+    return `<g transform="translate(${x},${y}) scale(${s * f},${s})">
+      <path d="M-14,-8 C-34,-6 -40,-24 -30,-34" fill="none" stroke="#e6a8b4" stroke-width="3" stroke-linecap="round"/>
+      <ellipse cx="0" cy="-13" rx="15" ry="13" fill="${F2.mouse}"/><ellipse cx="4" cy="-11" rx="8" ry="8" fill="#ece7ee"/>
+      <ellipse cx="-6" cy="-1" rx="6" ry="3" fill="#e6a8b4"/><ellipse cx="8" cy="-1" rx="6" ry="3" fill="#e6a8b4"/>
+      ${head(k, 10, -34, 15, f, F2.mouse, F2.mouseD, `<circle cx="1" cy="-48" r="9" fill="${F2.mouse}"/><circle cx="1" cy="-48" r="5" fill="#f2b8c4"/><circle cx="17" cy="-49" r="9" fill="${F2.mouse}"/><circle cx="17" cy="-49" r="5" fill="#f2b8c4"/>
+      <circle cx="10" cy="-34" r="12" fill="${F2.mouse}"/><path d="M18,-38 Q30,-33 19,-27 Z" fill="${F2.mouse}"/><circle cx="29" cy="-33" r="2.6" fill="#e6788c"/>
+      ${face(14, -37, m)}<path d="M24,-30 l8,2 M24,-32 l8,-2" stroke="${F2.mouseD}" stroke-width="1"/>`)}
+      ${faces[k] ? `<circle cx="-1" cy="-52" r="8" fill="${F2.mouse}"/><circle cx="21" cy="-52" r="8" fill="${F2.mouse}"/>` : ''}
+    </g>`;
+  };
+  const fox = (x, y, s = 1, o = {}) => {
+    const f = o.flip ? -1 : 1, m = o.mood || 'happy', k = o.k || 'F';
+    return `<g transform="translate(${x},${y}) scale(${s * f},${s})">
+      <path d="M-14,-22 C-56,-20 -66,-58 -44,-74 C-38,-56 -26,-40 -10,-36 Z" fill="${F2.fox}"/><path d="M-44,-74 C-50,-66 -52,-58 -50,-52 C-46,-60 -42,-66 -44,-74 Z" fill="#fff"/>
+      <ellipse cx="2" cy="-28" rx="20" ry="25" fill="${F2.fox}"/><ellipse cx="9" cy="-26" rx="11" ry="17" fill="#fff6ec"/>
+      <ellipse cx="-8" cy="-3" rx="9" ry="5" fill="${F2.foxD}"/><ellipse cx="14" cy="-3" rx="9" ry="5" fill="${F2.foxD}"/>
+      ${head(k, 12, -66, 25, f, F2.fox, F2.foxD, `<path d="M-6,-74 L-4,-100 L12,-82 Z" fill="${F2.fox}"/><path d="M-4,-94 L-4,-100 L2,-92 Z" fill="${C.ink}"/><path d="M16,-84 L30,-102 L32,-76 Z" fill="${F2.fox}"/><path d="M28,-98 L30,-102 L31,-94 Z" fill="${C.ink}"/>
+      <circle cx="12" cy="-66" r="20" fill="${F2.fox}"/><path d="M14,-62 Q40,-62 40,-56 Q30,-48 14,-50 Z" fill="#fff6ec"/><circle cx="40" cy="-58" r="3.5" fill="${C.ink}"/>
+      ${face(19, -72, m)}${mouth(29, -51, m)}`)}
+    </g>`;
+  };
+  const crane = (x, y, s = 1, o = {}) => {
+    const f = o.flip ? -1 : 1, m = o.mood || 'happy', k = o.k || 'C', dip = o.dip;
+    const hx = dip ? 46 : 20, hy = dip ? -56 : -132;
+    return `<g transform="translate(${x},${y}) scale(${s * f},${s})">
+      <path d="M-6,0 L-4,-46 M8,0 L6,-46" stroke="${F2.leg}" stroke-width="3.5" stroke-linecap="round"/><path d="M-6,0 l-8,2 M8,0 l8,2" stroke="${F2.leg}" stroke-width="3" stroke-linecap="round"/>
+      <path d="M-34,-62 q-14,4 -18,16 q14,-2 22,-8z" fill="${F2.craneD}"/>
+      <ellipse cx="0" cy="-62" rx="30" ry="20" fill="${F2.crane}" stroke="#dcdbd4" stroke-width="2"/><path d="M-26,-66 q14,-12 34,-4" fill="none" stroke="#dcdbd4" stroke-width="3"/>
+      <path d="M16,-74 Q${dip ? '40,-74 ' + hx + ',' + (hy + 10) : '24,-100 ' + hx + ',' + (hy + 12)}" fill="none" stroke="${F2.neck}" stroke-width="10" stroke-linecap="round"/>
+      ${head(k, hx, hy, 18, f, F2.crane, '#dcdbd4', `<circle cx="${hx}" cy="${hy}" r="12" fill="${F2.crane}" stroke="#dcdbd4" stroke-width="2"/><path d="M${hx - 6},${hy - 10} a7,5 0 0 1 12,0 z" fill="${F2.cap}"/>${face(hx + 3, hy - 2, m)}`)}
+      <path d="M${hx + (faces[k] ? 16 : 10)},${hy + 1} l${dip ? 10 : 36},${dip ? 26 : 4} l${dip ? -16 : -34},${dip ? -20 : 2} z" fill="${F2.beakC}"/>
+    </g>`;
+  };
+  /* 젊은 거북: 안경과 지팡이 없이 */
+  const kid = (x, y, s = 1, o = {}) => turtle(x, y, s, { ...o, young: true });
+  const zzz = (x, y) => `<g class="zz"><text x="${x}" y="${y}" font-family="Jua, sans-serif" font-size="22" fill="#23395b">z</text><text x="${x + 14}" y="${y - 16}" font-family="Jua, sans-serif" font-size="28" fill="#23395b">z</text><text x="${x + 32}" y="${y - 36}" font-family="Jua, sans-serif" font-size="34" fill="#23395b">Z</text></g>`;
+  const hill = (c = '#8cc95f') => `<path d="M260,236 Q380,120 520,150 L520,240 Z" fill="${c}"/>`;
+  const bigTree = (x, y, s = 1) => `<g transform="translate(${x},${y}) scale(${s})"><path d="M-10,0 L-7,-80 L7,-80 L10,0 Z" fill="#7a4b2a"/><circle cx="0" cy="-104" r="40" fill="#4f9d47"/><circle cx="-30" cy="-84" r="28" fill="#5cae52"/><circle cx="30" cy="-86" r="28" fill="#469240"/></g>`;
+  const flag = (x, y) => `<g transform="translate(${x},${y})"><path d="M0,0 V-70" stroke="#6e4521" stroke-width="4"/><path d="M2,-70 h34 l-8,10 l8,10 h-34 z" fill="#ff5c7a"/></g>`;
+  const dust = (x, y) => `<g opacity=".7"><circle cx="${x}" cy="${y}" r="9" fill="#e9e0cf"/><circle cx="${x - 16}" cy="${y + 2}" r="7" fill="#e9e0cf"/><circle cx="${x - 28}" cy="${y - 2}" r="5" fill="#e9e0cf"/></g><path d="M${x - 60},${y - 20} h30 M${x - 70},${y - 6} h36" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`;
+  const sunset = () => sky('#ffb27a', '#ffe2b8', '#8bbf5c') + `<circle cx="430" cy="120" r="40" fill="#ff8a5c" opacity=".9"/>`;
+  const net = (x, y, s = 1) => { let o = `<g transform="translate(${x},${y}) scale(${s})" stroke="#6e4521" stroke-width="2.5" fill="none" opacity=".9">`; for (let i = -4; i <= 4; i++) o += `<path d="M${i * 16},-128 Q${i * 18},-60 ${i * 20},0"/>`; for (let j = 0; j < 7; j++) o += `<path d="M-70,${-120 + j * 19} Q0,${-110 + j * 19} 70,${-120 + j * 19}"/>`; return o + `<path d="M0,-128 V-200"/></g>`; };
+  const netTorn = (x, y, s = 1) => `<g transform="translate(${x},${y}) scale(${s})" stroke="#6e4521" stroke-width="2.5" fill="none" opacity=".8"><path d="M-70,0 Q-60,-40 -40,-30 M-50,0 Q-40,-20 -20,-24 M40,0 Q46,-30 70,-26 M20,0 Q30,-18 52,-14 M-60,-10 h20 M30,-8 h30"/></g>`;
+  const table = (x, y, w = 200) => `<rect x="${x - w / 2}" y="${y}" width="${w}" height="12" rx="4" fill="#a8703f"/><rect x="${x - w / 2 + 14}" y="${y + 12}" width="10" height="${250 - y}" fill="#8a5a33"/><rect x="${x + w / 2 - 24}" y="${y + 12}" width="10" height="${250 - y}" fill="#8a5a33"/>`;
+  const plate = (x, y, full = true) => `<ellipse cx="${x}" cy="${y}" rx="34" ry="7" fill="#fff" stroke="#c9d3e3" stroke-width="2"/>${full ? `<ellipse cx="${x}" cy="${y - 1}" rx="24" ry="4" fill="#f2a65a"/>` : ''}`;
+  const jar = (x, y) => `<path d="M${x - 22},${y} Q${x - 30},${y - 40} ${x - 8},${y - 52} L${x - 8},${y - 90} L${x + 8},${y - 90} L${x + 8},${y - 52} Q${x + 30},${y - 40} ${x + 22},${y} Z" fill="#7aa7d9" stroke="#4f7fb3" stroke-width="2"/><rect x="${x - 11}" y="${y - 96}" width="22" height="8" rx="3" fill="#4f7fb3"/><path d="M${x - 16},${y - 22} h32" stroke="#fff" stroke-width="3" opacity=".6"/>`;
+  const steam = (x, y) => `<g class="zz"><path d="M${x - 8},${y} q-6,-10 0,-20 q6,-10 0,-20 M${x + 8},${y} q-6,-10 0,-20 q6,-10 0,-20" stroke="#fff" stroke-width="3" fill="none" opacity=".85" stroke-linecap="round"/></g>`;
+  const pond = () => `<ellipse cx="80" cy="262" rx="150" ry="22" fill="#6cc0ef"/><path d="M-30,262 q10,-30 6,-60 M-10,262 q4,-26 0,-50 M200,262 q6,-28 2,-54" stroke="#4f9d47" stroke-width="4" fill="none"/>`;
+  const foxDen = () => `<path d="M330,236 Q340,140 430,132 Q520,130 530,236 Z" fill="#a17a52"/><path d="M400,236 Q402,196 432,192 Q462,196 464,236 Z" fill="#4b3526"/>`;
+  const indoor = (c = '#f6e3c4') => `<rect x="-200" y="-150" width="800" height="500" fill="${c}"/><rect x="-200" y="250" width="800" height="100" fill="#c99a68"/><rect x="-200" y="244" width="800" height="8" fill="#a8703f"/><rect x="380" y="10" width="110" height="90" rx="6" fill="#bfe6ff" stroke="#a8703f" stroke-width="8"/><path d="M435,10 v90 M380,55 h110" stroke="#a8703f" stroke-width="5"/>`;
+  const crowd = (x, y, s = .6) => bunny(x, y, s, { mood: 'joy' }) + squirrel(x + 40, y, s * .9, { mood: 'joy' }) + duck(x + 76, y, s * .9, { mood: 'joy' });
+  return { faces, squirrel, bunny, bear, tree, oak, acorn, pile, leaves, snowfall, autumn, winter, sky, wrap, lion, lioness, duck, raccoon, turtle, meadow, bush, rainy, cloud, rain, river, log, rock, den, rainbow, night, stars, fireflies, thought, cottage, fence, flower, pot, broken, butterflies, room , mouse, fox, crane, kid, zzz, hill, bigTree, flag, dust, sunset, net, netTorn, table, plate, jar, steam, pond, foxDen, indoor, crowd };
 })();
 
 const TALES = [
@@ -1452,6 +1509,66 @@ const TALES = [
       { text: ['며칠 뒤, 새 화분에 알록달록 꽃이 활짝 피었어요.', '<q data-s="K">이 꽃은 깨진 화분 꽃보다 더 예쁘구나. 정직한 마음으로 키운 꽃이니까.</q>'], art: A => A.wrap(A.meadow() + A.cottage(400, 236, .95) + A.pot(200, 246, 1.25, true, 'bloom') + A.raccoon(100, 252, 1.05, { mood: 'joy' }) + A.turtle(340, 254, 1, { flip: true, mood: 'joy' }) + A.butterflies(3), '새 화분에 활짝 핀 꽃') },
       { end: true, text: ['<h2>끝</h2>', '<p><b>함께 이야기해요</b></p>', '<ol><li>[R는] 왜 처음에 바람 탓을 했을까요?</li><li>솔직하게 말한 뒤 [R의] 마음은 어떻게 바뀌었나요?</li><li>실수를 했을 때 우리는 어떻게 말하면 좋을까요?</li></ol>'], art: A => A.wrap(A.meadow() + A.cottage(380, 236, .95) + A.pot(200, 246, 1.1) + A.raccoon(110, 252, 1.05, { mood: 'joy' }) + A.bunny(150, 252, .9, { mood: 'joy', k: 'T' }) + A.turtle(330, 254, 1, { flip: true, mood: 'joy' }), '함께 웃는 아기 너구리, 토끼, 거북 할아버지') }
     ]
+  },
+  {
+    id: 'race', title: '엉금이와 토토의 달리기', theme: '꾸준함', minutes: '5분', from: '이솝 이야기 「토끼와 거북」을 새로 쓴 이야기',
+    cast: [{ k: 'E', base: '엉금', kind: '거북', icon: '🐢', who: '아이를 추천해요' }, { k: 'T', base: '토토', kind: '토끼', icon: '🐰', who: '아빠나 엄마를 추천해요' }],
+    cover: A => A.wrap(A.meadow() + A.hill() + A.bigTree(430, 160, .9) + A.flag(400, 160) + A.kid(150, 252, 1.05, { k: 'E', mood: 'joy' }) + A.bunny(270, 250, 1.05, { flip: true, mood: 'happy' }), '언덕 위 깃발을 향해 가는 거북과 토끼'),
+    pages: [
+      { text: ['<h2>[E와] [T의] 달리기</h2>', '<p class="by">이솝 이야기 「토끼와 거북」을 새로 꾸몄어요</p>'], art: A => A.wrap(A.meadow() + A.hill() + A.bigTree(430, 160, .9) + A.flag(400, 160) + A.kid(150, 252, 1.05, { k: 'E', mood: 'joy' }) + A.bunny(270, 250, 1.05, { flip: true, mood: 'happy' }), '언덕 위 깃발을 향해 가는 거북과 토끼') },
+      { text: ['숲속 마을에 발이 아주 빠른 [T*가] 살았어요.', '[T는] 날마다 친구들에게 자랑했어요.', '<q data-s="T">이 숲에서 나보다 빠른 친구는 아무도 없지!</q>'], art: A => A.wrap(A.meadow() + A.bush(300, 236) + A.dust(140, 236) + A.bunny(200, 250, 1.15, { mood: 'joy', ears: -20 }), '바람처럼 달리는 토끼') },
+      { text: ['그때 [E*가] 느릿느릿 지나갔어요.', '[T는] 배를 잡고 깔깔 웃었어요.', '<q data-s="T">[E야], 그렇게 느려서 언제 집에 가니?</q>'], art: A => A.wrap(A.meadow() + A.bush(-10, 236) + A.kid(170, 254, 1, { k: 'E', mood: 'sad' }) + A.bunny(320, 250, 1.1, { flip: true, mood: 'joy' }), '느린 거북을 놀리는 토끼') },
+      { text: ['[E는] 빙그레 웃으며 말했어요.', '<q data-s="E">그럼 우리, 저 언덕 위 큰 나무까지 달리기 시합 할래?</q>', '숲속 친구들이 모두 구경하러 모여들었어요.'], art: A => A.wrap(A.meadow() + A.hill() + A.bigTree(430, 160, .9) + A.kid(120, 254, 1, { k: 'E', mood: 'happy' }) + A.bunny(240, 250, 1.05, { flip: true, mood: 'happy' }) + A.crowd(-60, 252, .6), '달리기 시합을 하자고 하는 거북') },
+      { text: ['준비, 땅!', '[T는] 바람처럼 휙 달려 나갔어요.', '[E는] 엉금엉금, 한 걸음씩 걸었어요.'], art: A => A.wrap(A.meadow() + A.hill() + A.bigTree(430, 160, .9) + A.flag(400, 160) + A.dust(250, 236) + A.bunny(310, 248, 1, { mood: 'joy', ears: -22 }) + A.kid(60, 254, .9, { k: 'E', mood: 'pout' }) + A.crowd(-100, 252, .5), '출발하는 토끼와 거북') },
+      { text: ['한참 달리던 [T는] 뒤를 돌아보았어요.', '[E는] 저 멀리 작은 점처럼 보였어요.', '<q data-s="T">흥, 이렇게 느린데 조금 쉬어도 되겠지?</q>'], art: A => A.wrap(A.meadow() + A.bigTree(260, 236, 1.1) + A.bunny(320, 250, 1.1, { flip: true, mood: 'happy' }) + A.kid(40, 250, .42, { k: 'E' }), '뒤를 돌아보는 토끼') },
+      { text: ['[T는] 나무 그늘 아래 누워 쿨쿨 잠이 들었어요.', '따뜻한 햇살에 낮잠이 아주 달콤했어요.'], art: A => A.wrap(A.meadow() + A.bigTree(220, 236, 1.2) + `<g transform="rotate(-80 250 250)">` + A.bunny(250, 250, 1, { mood: 'joy' }) + `</g>` + A.zzz(290, 150), '나무 그늘에서 잠든 토끼') },
+      { text: ['그동안 [E는] 쉬지 않고 걸었어요.', '다리가 아파도, 숨이 차도, 한 걸음 또 한 걸음.', '<q data-s="E">천천히 가도 괜찮아. 멈추지만 않으면 돼.</q>'], art: A => A.wrap(A.meadow() + A.bush(300, 236) + A.kid(180, 254, 1.1, { k: 'E', mood: 'pout' }) + `<path d="M90,256 q10,-6 20,0 M60,258 q10,-6 20,0 M30,256 q10,-6 20,0" stroke="#6a9a4a" stroke-width="3" fill="none"/>`, '쉬지 않고 걸어가는 거북') },
+      { text: ['[E는] 잠든 [T] 옆을 살금살금 지나갔어요.', '<q data-s="E">조금만 더, 조금만 더!</q>'], art: A => A.wrap(A.meadow() + A.bigTree(140, 236, 1.2) + `<g transform="rotate(-80 170 250)">` + A.bunny(170, 250, .95, { mood: 'joy' }) + `</g>` + A.zzz(200, 150) + A.kid(330, 254, 1, { k: 'E', mood: 'happy' }), '잠든 토끼 옆을 지나가는 거북') },
+      { text: ['해가 뉘엿뉘엿 질 무렵, [T는] 번쩍 눈을 떴어요.', '<q data-s="T">앗, 내가 너무 오래 잤잖아!</q>', '[T는] 헐레벌떡 달렸어요.'], art: A => A.wrap(A.sunset() + A.hill('#7ab352') + A.bigTree(-40, 236, 1.1) + A.dust(160, 236) + A.bunny(220, 250, 1.1, { mood: 'cry', ears: -22 }), '해 질 무렵 놀라서 달리는 토끼') },
+      { text: ['하지만 언덕 위 큰 나무에는 벌써 [E가] 도착해 있었어요.', '친구들이 박수를 치며 환호했어요. 짝짝짝!'], art: A => A.wrap(A.sunset() + A.hill('#7ab352') + A.bigTree(440, 150, .9) + A.flag(400, 150) + A.kid(340, 170, .9, { k: 'E', mood: 'joy' }) + A.crowd(150, 252, .6) + A.bunny(40, 250, .9, { mood: 'sad' }), '언덕 위에 먼저 도착한 거북') },
+      { text: ['[T는] 부끄러워 귀를 축 늘어뜨렸어요.', '<q data-s="T">[E야], 놀려서 미안해. 너는 정말 대단해.</q>', '<q data-s="E">고마워. 다음엔 우리 같이 걸어서 가자!</q>'], art: A => A.wrap(A.sunset() + A.bigTree(-30, 236, 1) + A.bunny(170, 250, 1.1, { mood: 'shy', ears: 30 }) + A.kid(300, 254, 1.05, { k: 'E', flip: true, mood: 'joy' }), '사과하는 토끼와 웃는 거북') },
+      { end: true, text: ['<h2>끝</h2>', '<p><b>함께 이야기해요</b></p>', '<ol><li>[T는] 왜 시합에서 졌을까요?</li><li>[E는] 느렸는데도 어떻게 이길 수 있었을까요?</li><li>끝까지 꾸준히 해서 해낸 일이 있나요?</li></ol>'], art: A => A.wrap(A.meadow() + A.hill() + A.bigTree(430, 160, .9) + A.kid(170, 254, 1, { k: 'E', mood: 'joy' }) + A.bunny(260, 250, 1, { flip: true, mood: 'joy' }), '나란히 걷는 거북과 토끼') }
+    ]
+  },
+  {
+    id: 'mouse', title: '찍찍이의 작은 약속', theme: '친절', minutes: '5분', from: '이솝 이야기 「사자와 생쥐」를 새로 쓴 이야기',
+    cast: [{ k: 'J', base: '찍찍', kind: '생쥐', icon: '🐭', who: '아이를 추천해요' }, { k: 'S', base: '으르렁', kind: '사자', icon: '🦁', who: '아빠를 추천해요' }],
+    cover: A => A.wrap(A.meadow() + A.bigTree(80, 236, 1.2) + A.lion(250, 252, 1.6, { k: 'S', mood: 'joy' }) + A.mouse(330, 252, 1.3, { flip: true, mood: 'joy' }), '사자와 생쥐'),
+    pages: [
+      { text: ['<h2>[J의] 작은 약속</h2>', '<p class="by">이솝 이야기 「사자와 생쥐」를 새로 꾸몄어요</p>'], art: A => A.wrap(A.meadow() + A.bigTree(80, 236, 1.2) + A.lion(250, 252, 1.6, { k: 'S', mood: 'joy' }) + A.mouse(330, 252, 1.3, { flip: true, mood: 'joy' }), '사자와 생쥐') },
+      { text: ['커다란 나무 아래에서 숲의 왕 [S*가] 낮잠을 자고 있었어요.', '드르렁, 드르렁! 숲이 쿵쿵 울릴 만큼 큰 코골이였어요.'], art: A => A.wrap(A.meadow() + A.bigTree(140, 236, 1.3) + A.lion(220, 254, 1.6, { k: 'S', mood: 'joy' }) + A.zzz(270, 110), '나무 아래에서 낮잠 자는 사자') },
+      { text: ['그때 [J*가] 사자의 등 위를 쪼르르 뛰어갔어요.', '그만 발이 미끄러져, 사자의 코 위로 툭!'], art: A => A.wrap(A.meadow() + A.bigTree(140, 236, 1.3) + A.lion(220, 254, 1.6, { k: 'S', mood: 'joy' }) + A.mouse(268, 150, 1, { mood: 'cry' }), '잠든 사자의 코 위로 떨어진 생쥐') },
+      { text: ['[S가] 눈을 번쩍 뜨더니 커다란 앞발로 [J를] 꾹 눌렀어요.', '<q data-s="S">감히 내 낮잠을 깨우다니! 한입에 꿀꺽 먹어 버릴 테다!</q>'], art: A => A.wrap(A.meadow() + A.bigTree(80, 236, 1.2) + A.lion(220, 254, 1.6, { k: 'S', mood: 'pout', paw: true }) + A.mouse(300, 252, 1.1, { flip: true, mood: 'cry' }), '화가 난 사자와 겁먹은 생쥐') },
+      { text: ['<q data-s="J">사자님, 제발 살려 주세요! 언젠가 꼭 은혜를 갚을게요.</q>', '[S는] 껄껄 웃었어요.', '<q data-s="S">너처럼 작은 생쥐가 나를 어떻게 돕는다는 거냐?</q>'], art: A => A.wrap(A.meadow() + A.bigTree(80, 236, 1.2) + A.lion(220, 254, 1.6, { k: 'S', mood: 'joy' }) + A.mouse(310, 252, 1.1, { flip: true, mood: 'sad' }), '껄껄 웃는 사자') },
+      { text: ['그래도 [S는] 앞발을 살며시 들어 주었어요.', '<q data-s="S">오늘은 기분이 좋으니 그냥 보내 주마.</q>', '[J는] 꾸벅 인사하고 쪼르르 달아났어요.'], art: A => A.wrap(A.meadow() + A.bigTree(80, 236, 1.2) + A.lion(200, 254, 1.6, { k: 'S', mood: 'happy' }) + A.mouse(360, 252, 1.1, { mood: 'joy' }) + A.dust(330, 246), '생쥐를 놓아주는 사자') },
+      { text: ['며칠 뒤, 숲에 쿵! 하는 소리가 울렸어요.', '[S가] 사냥꾼이 쳐 놓은 그물에 걸리고 만 거예요.'], art: A => A.wrap(A.meadow() + A.bigTree(260, 236, 1.5) + A.lion(240, 254, 1.5, { k: 'S', mood: 'sad' }) + A.net(250, 258, 1.2), '그물에 걸린 사자') },
+      { text: ['[S는] 이리저리 몸부림쳤지만 그물은 점점 더 조여 왔어요.', '<q data-s="S">으르렁! 누가 나 좀 도와줘!</q>', '하지만 다른 동물들은 무서워서 아무도 다가오지 못했어요.'], art: A => A.wrap(A.meadow() + A.bigTree(260, 236, 1.5) + A.lion(240, 254, 1.5, { k: 'S', mood: 'cry' }) + A.net(250, 258, 1.2) + A.bear(-40, 254, .8, { mood: 'sad' }) + A.bunny(30, 254, .7, { mood: 'sad' }), '그물 속에서 도움을 부르는 사자') },
+      { text: ['그때 작은 발소리가 들렸어요. 쪼르르!', '[J였]어요.', '<q data-s="J">사자님, 걱정 마세요. 제가 도와 드릴게요!</q>'], art: A => A.wrap(A.meadow() + A.bigTree(260, 236, 1.5) + A.lion(240, 254, 1.5, { k: 'S', mood: 'sad' }) + A.net(250, 258, 1.2) + A.mouse(400, 252, 1.2, { flip: true, mood: 'happy' }), '달려온 생쥐') },
+      { text: ['[J는] 작고 뾰족한 이빨로 그물을 갉기 시작했어요.', '사각사각, 사각사각. 한 줄, 또 한 줄…'], art: A => A.wrap(A.meadow() + A.bigTree(260, 236, 1.5) + A.lion(240, 254, 1.5, { k: 'S', mood: 'happy' }) + A.net(250, 258, 1.2) + A.mouse(320, 220, 1.1, { flip: true, mood: 'pout' }) + `<text class="zz" x="350" y="190" font-family="Jua, sans-serif" font-size="22" fill="#23395b">사각사각</text>`, '그물을 갉는 생쥐') },
+      { text: ['드디어 그물에 커다란 구멍이 뻥 뚫렸어요!', '[S는] 그물 밖으로 성큼 걸어 나왔어요.'], art: A => A.wrap(A.meadow() + A.bigTree(80, 236, 1.2) + A.netTorn(150, 258, 1.2) + A.lion(280, 254, 1.6, { k: 'S', mood: 'joy' }) + A.mouse(380, 252, 1.2, { flip: true, mood: 'joy' }), '그물에서 풀려난 사자') },
+      { text: ['[S는] [J를] 앞발 위에 살포시 올려놓고 말했어요.', '<q data-s="S">고맙다, 작은 친구야. 작다고 얕보았던 내가 부끄럽구나.</q>', '그날부터 둘은 둘도 없는 친구가 되었어요.'], art: A => A.wrap(A.sunset() + A.bigTree(60, 236, 1.2) + A.lion(220, 254, 1.6, { k: 'S', mood: 'shy' }) + A.mouse(280, 196, 1, { flip: true, mood: 'joy' }), '앞발 위에 생쥐를 올린 사자') },
+      { end: true, text: ['<h2>끝</h2>', '<p><b>함께 이야기해요</b></p>', '<ol><li>[S는] 왜 [J를] 놓아주었을까요?</li><li>작은 [J가] 어떻게 커다란 [S를] 구할 수 있었을까요?</li><li>작아도 친구를 도울 수 있는 일에는 무엇이 있을까요?</li></ol>'], art: A => A.wrap(A.meadow() + A.bigTree(80, 236, 1.2) + A.lion(250, 252, 1.6, { k: 'S', mood: 'joy' }) + A.mouse(330, 252, 1.3, { flip: true, mood: 'joy' }), '함께 웃는 사자와 생쥐') }
+    ]
+  },
+  {
+    id: 'crane', title: '살랑이와 길쭉이의 저녁 식사', theme: '배려', minutes: '5분', from: '이솝 이야기 「여우와 두루미」를 새로 쓴 이야기',
+    cast: [{ k: 'F', base: '살랑', kind: '여우', icon: '🦊', who: '아이를 추천해요' }, { k: 'C', base: '길쭉', kind: '두루미', icon: '🕊️', who: '엄마나 아빠를 추천해요' }],
+    cover: A => A.wrap(A.indoor() + A.table(200, 196, 240) + A.plate(150, 194) + A.jar(250, 196) + A.fox(70, 252, 1.15, { mood: 'joy' }) + A.crane(340, 252, 1.05, { flip: true, mood: 'joy' }), '식탁을 사이에 둔 여우와 두루미'),
+    pages: [
+      { text: ['<h2>[F와] [C의] 저녁 식사</h2>', '<p class="by">이솝 이야기 「여우와 두루미」를 새로 꾸몄어요</p>'], art: A => A.wrap(A.indoor() + A.table(200, 196, 240) + A.plate(150, 194) + A.jar(250, 196) + A.fox(70, 252, 1.15, { mood: 'joy' }) + A.crane(340, 252, 1.05, { flip: true, mood: 'joy' }), '식탁을 사이에 둔 여우와 두루미') },
+      { text: ['숲속에 장난꾸러기 [F*가] 살았어요.', '어느 날 [F는] 연못가에 사는 [C*를] 저녁 식사에 초대했어요.'], art: A => A.wrap(A.meadow() + A.pond() + A.crane(110, 252, 1.05, { mood: 'happy' }) + A.fox(270, 252, 1.15, { flip: true, mood: 'joy' }), '연못가에서 두루미를 초대하는 여우') },
+      { text: ['<q data-s="F">[C야], 오늘 저녁 우리 집에 놀러 와. 맛있는 수프를 끓여 줄게!</q>', '[C는] 신이 나서 날개를 퍼덕였어요.'], art: A => A.wrap(A.meadow() + A.pond() + A.crane(110, 252, 1.05, { mood: 'joy' }) + A.fox(270, 252, 1.15, { flip: true, mood: 'happy' }) + `<path d="M70,180 l-24,-14 M74,170 l-20,-22" stroke="#fff" stroke-width="5" stroke-linecap="round"/>`, '신이 난 두루미') },
+      { text: ['저녁이 되자 [F는] 따끈한 수프를 내왔어요.', '그런데 수프는 아주 납작한 접시에 담겨 있었어요.'], art: A => A.wrap(A.indoor() + A.table(200, 196, 260) + A.plate(150, 194) + A.plate(250, 194) + A.steam(150, 178) + A.steam(250, 178) + A.fox(60, 252, 1.15, { mood: 'joy' }) + A.crane(350, 252, 1.05, { flip: true, mood: 'happy' }), '납작한 접시에 담긴 수프') },
+      { text: ['[F는] 혀로 할짝할짝 맛있게 먹었어요.', '하지만 [C는] 기다란 부리 때문에 한 모금도 먹을 수 없었어요.', '<q data-s="C">톡, 톡… 아무리 해도 안 되네.</q>'], art: A => A.wrap(A.indoor() + A.table(200, 196, 260) + A.plate(150, 194) + A.plate(250, 194) + A.fox(105, 252, 1.15, { mood: 'joy' }) + A.crane(320, 252, 1.05, { flip: true, mood: 'sad', dip: true }), '접시의 수프를 먹지 못하는 두루미') },
+      { text: ['<q data-s="F">어머, 배가 안 고픈가 보네? 그럼 내가 먹을게!</q>', '[F는] [C의] 수프까지 싹싹 먹어 치웠어요.', '[C는] 배가 고픈 채 집으로 돌아갔어요.'], art: A => A.wrap(A.indoor() + A.table(200, 196, 260) + A.plate(150, 194, false) + A.plate(250, 194, false) + A.fox(100, 252, 1.15, { mood: 'joy' }) + A.crane(360, 252, 1.05, { mood: 'sad' }), '빈 접시와 배고픈 두루미') },
+      { text: ['며칠 뒤, 이번에는 [C가] [F를] 초대했어요.', '<q data-s="C">[F야], 오늘은 내가 맛있는 걸 대접할게.</q>'], art: A => A.wrap(A.meadow() + A.foxDen() + A.crane(250, 252, 1.05, { flip: true, mood: 'happy' }) + A.fox(120, 252, 1.15, { mood: 'joy' }), '여우를 초대하는 두루미') },
+      { text: ['[C는] 음식을 목이 길고 좁은 항아리에 담아 내왔어요.', '[C는] 기다란 부리를 쏙 넣어 맛있게 먹었어요.'], art: A => A.wrap(A.indoor('#e8eef6') + A.table(200, 196, 260) + A.jar(160, 196) + A.jar(250, 196) + A.fox(50, 252, 1.15, { mood: 'happy' }) + A.crane(300, 252, 1.05, { flip: true, mood: 'joy', dip: true }), '목이 긴 항아리에 담긴 음식') },
+      { text: ['하지만 [F는] 아무리 애를 써도 주둥이가 항아리에 들어가지 않았어요.', '킁킁, 냄새만 맡을 뿐이었어요.', '<q data-s="F">아, 배고파…</q>'], art: A => A.wrap(A.indoor('#e8eef6') + A.table(200, 196, 260) + A.jar(160, 196) + A.jar(250, 196) + A.fox(110, 252, 1.15, { mood: 'sad' }) + A.crane(340, 252, 1.05, { flip: true, mood: 'happy' }), '항아리 앞에서 배고픈 여우') },
+      { text: ['그제야 [F는] 깨달았어요.', '<q data-s="F">그날 [C도] 이렇게 속상했겠구나. 내가 친구 마음을 생각하지 못했어.</q>'], art: A => A.wrap(A.indoor('#e8eef6') + A.fox(170, 252, 1.25, { mood: 'shy' }) + A.thought(290, 140, A.crane(275, 182, .5, { dip: true, mood: 'sad' }) + A.plate(305, 182)), '두루미의 마음을 생각하는 여우') },
+      { text: ['<q data-s="F">[C야], 그때는 정말 미안했어.</q>', '[C는] 빙그레 웃으며 고개를 끄덕였어요.', '<q data-s="C">네가 내 마음을 알아줘서 고마워.</q>'], art: A => A.wrap(A.meadow() + A.pond() + A.fox(160, 252, 1.15, { mood: 'shy' }) + A.crane(300, 252, 1.05, { flip: true, mood: 'joy' }), '사과하는 여우와 웃는 두루미') },
+      { text: ['다음 날, 둘은 함께 저녁을 차렸어요.', '[F의] 몫은 납작한 접시에, [C의] 몫은 길쭉한 그릇에.', '둘은 배부르게 먹으며 하하 호호 웃었어요.'], art: A => A.wrap(A.indoor() + A.table(200, 196, 260) + A.plate(140, 194) + A.jar(260, 196) + A.steam(140, 178) + A.fox(70, 252, 1.15, { mood: 'joy' }) + A.crane(330, 252, 1.05, { flip: true, mood: 'joy' }), '서로에게 맞는 그릇으로 함께 먹는 여우와 두루미') },
+      { end: true, text: ['<h2>끝</h2>', '<p><b>함께 이야기해요</b></p>', '<ol><li>[C는] 왜 [F의] 집에서 수프를 먹지 못했을까요?</li><li>항아리 앞에서 [F는] 무엇을 깨달았나요?</li><li>친구를 위해 배려할 수 있는 일에는 무엇이 있을까요?</li></ol>'], art: A => A.wrap(A.meadow() + A.pond() + A.fox(170, 252, 1.15, { mood: 'joy' }) + A.crane(290, 252, 1.05, { flip: true, mood: 'joy' }), '함께 웃는 여우와 두루미') }
+    ]
   }
 ];
 /* 이름 바꾸기: [D는] 처럼 쓰면 받침에 맞춰 조사를 고른다. 별(*)은 이름을 바꾸지 않았을 때 '다람쥐 다람이'처럼 동물 이름을 붙인다 */
@@ -1480,7 +1597,7 @@ function esc(t) { return String(t).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<'
 const CAST = {};
 function castOf(t) { return CAST[t.id] || (CAST[t.id] = { names: {}, faces: {} }); }
 function applyFaces(t) { const c = castOf(t); Object.keys(ART.faces).forEach(k => delete ART.faces[k]); t.cast.forEach(r => { if (c.faces[r.k]) ART.faces[r.k] = c.faces[r.k]; }); }
-const SOON = [['🤝', '우정', '두 친구의 무지개 다리'], ['🌱', '배려', '작은 씨앗의 자리']];
+const SOON = [['🤝', '우정', '두 친구의 무지개 다리']];
 
 const $t = id => document.getElementById(id);
 function renderShelf() {
