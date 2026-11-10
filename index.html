@@ -229,7 +229,7 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
       <li>어른과 함께 넓고 미끄럽지 않은 곳에서 놀아 주세요.</li>
       <li>휴대폰을 고정하고 2m쯤 떨어져 온몸이 보이게 서면 가장 잘 됩니다.</li>
       <li>카메라 영상은 이 기기 안에서만 처리하고 저장하거나 전송하지 않습니다. 저장되는 것은 별 개수뿐입니다.</li>
-      <li>자세 틀 놀이는 한 발로 서는 자세가 있으니 어른이 곁에서 살펴 주세요. 틀과 몸이 겹치지 않아도 팔다리 방향이 맞으면 인정합니다.</li>
+      <li>자세 틀 놀이는 초급·중급·고급으로 고를 수 있어요. 한 발로 서는 균형 자세가 많으니 어른이 곁에서 살펴 주세요. 틀과 몸이 겹치지 않아도 팔다리 방향이 맞으면 인정합니다.</li>
       <li>카카오톡 같은 앱 안에서 열면 일부 기능이 막힐 수 있어요. Chrome이나 삼성 인터넷으로 열어 주세요.</li>
       <li>TV로 크게 하려면 휴대폰 화면 미러링(삼성은 Smart View)을 켠 뒤 <b>가로 (TV)</b>를 고르고, 휴대폰을 옆으로 눕혀 TV 아래에 세워 주세요.</li>
       <li>콩콩 스텝은 양말을 벗고 미끄럽지 않은 바닥에서 해 주세요.</li>
@@ -243,9 +243,9 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
   <div class="pick-box">
     <h2 id="pickTitle"></h2>
     <div class="lvl" id="pickLevel" role="radiogroup" aria-label="난이도" hidden>
-      <button type="button" data-lvl="easy" aria-checked="true" role="radio">초급<small>아무 풍선이나</small></button>
-      <button type="button" data-lvl="mid" aria-checked="false" role="radio">중급<small>빨간 풍선만</small></button>
-      <button type="button" data-lvl="hard" aria-checked="false" role="radio">고급<small>파랑은 왼손<br>분홍은 오른손</small></button>
+      <button type="button" data-lvl="easy" aria-checked="true" role="radio">초급<small id="lvlEasy"></small></button>
+      <button type="button" data-lvl="mid" aria-checked="false" role="radio">중급<small id="lvlMid"></small></button>
+      <button type="button" data-lvl="hard" aria-checked="false" role="radio">고급<small id="lvlHard"></small></button>
     </div>
     <div class="pick-row">
       <button type="button" id="pickSolo"><span aria-hidden="true">🙋</span>혼자 하기</button>
@@ -302,18 +302,31 @@ function makeChart(n, rnd = Math.random) {
 }
 /* 자세 틀: 관절 방향(도)으로 정의. 0=위, 90=화면 오른쪽, 180=아래, 270=화면 왼쪽. 틀 그림과 판정이 같은 값을 쓴다 */
 const SEGS = [['aL', 11, 13], ['fL', 13, 15], ['aR', 12, 14], ['fR', 14, 16], ['tL', 23, 25], ['sL', 25, 27], ['tR', 24, 26], ['sR', 26, 28]];
+/* 자세 틀: 쉬움(lv 1), 보통(lv 2, 다리·몸통 힘), 어려움(lv 3, 한 발 균형). fit은 화면에 보여 주는 운동 효과 */
 const SHAPES = [
-  { id: 'tree', name: '나무 자세', T: 0, aL: 335, fL: 25, aR: 25, fR: 335, tL: 245, sL: 125, tR: 180, sR: 180 },
-  { id: 'star', name: '반짝 별', T: 0, aL: 318, fL: 318, aR: 42, fR: 42, tL: 205, sL: 205, tR: 155, sR: 155 },
-  { id: 'plane', name: '비행기', T: 0, aL: 270, fL: 270, aR: 90, fR: 90, tL: 180, sL: 180, tR: 180, sR: 180 },
-  { id: 'warrior', name: '용감한 장군', T: 0, aL: 270, fL: 270, aR: 90, fR: 90, tL: 250, sL: 180, tR: 125, sR: 125 },
-  { id: 'squat', name: '의자에 앉은 척', side: true, T: 15, aL: 90, fL: 90, aR: 90, fR: 90, tL: 95, sL: 195, tR: 95, sR: 195 },
-  { id: 'lunge', name: '높이 뻗기', side: true, T: 350, aL: 15, fL: 15, aR: 15, fR: 15, tL: 262, sL: 180, tR: 118, sR: 118 },
-  { id: 'bend', name: '옆으로 기울이기', T: 340, aL: 200, fL: 190, aR: 10, fR: 325, tL: 188, sL: 188, tR: 172, sR: 172 },
-  { id: 'flamingo', name: '플라밍고', T: 0, aL: 270, fL: 270, aR: 90, fR: 90, tL: 235, sL: 170, tR: 180, sR: 180 },
-  { id: 'hero', name: '슈퍼 영웅', T: 0, aL: 235, fL: 125, aR: 125, fR: 235, tL: 195, sL: 195, tR: 165, sR: 165 },
-  { id: 'rocket', name: '로켓 발사', T: 0, aL: 350, fL: 5, aR: 10, fR: 355, tL: 180, sL: 180, tR: 180, sR: 180 }
+  { id: 'rocket', lv: 1, fit: '쭉 펴기', name: '로켓 발사', T: 0, aL: 350, fL: 5, aR: 10, fR: 355, tL: 180, sL: 180, tR: 180, sR: 180 },
+  { id: 'star', lv: 1, fit: '쭉 펴기', name: '반짝 별', T: 0, aL: 318, fL: 318, aR: 42, fR: 42, tL: 205, sL: 205, tR: 155, sR: 155 },
+  { id: 'warrior', lv: 2, fit: '다리 힘', name: '용감한 장군', T: 0, aL: 270, fL: 270, aR: 90, fR: 90, tL: 250, sL: 180, tR: 125, sR: 125 },
+  { id: 'sumo', lv: 2, fit: '다리 힘', name: '씩씩한 스모 선수', T: 0, aL: 270, fL: 270, aR: 90, fR: 90, tL: 228, sL: 180, tR: 132, sR: 180 },
+  { id: 'sidelunge', lv: 2, fit: '다리 힘', name: '옆으로 쭉 앉아 만세', T: 0, aL: 345, fL: 0, aR: 15, fR: 0, tL: 215, sL: 175, tR: 125, sR: 125 },
+  { id: 'squat', lv: 2, fit: '다리 힘', name: '의자에 앉은 척', side: true, T: 15, aL: 90, fL: 90, aR: 90, fR: 90, tL: 95, sL: 195, tR: 95, sR: 195 },
+  { id: 'ski', lv: 2, fit: '다리 힘', name: '스키 타기', side: true, T: 35, aL: 150, fL: 165, aR: 150, fR: 165, tL: 105, sL: 205, tR: 105, sR: 205 },
+  { id: 'lunge', lv: 2, fit: '다리 힘', name: '높이 뻗기', side: true, T: 350, aL: 15, fL: 15, aR: 15, fR: 15, tL: 262, sL: 180, tR: 118, sR: 118 },
+  { id: 'bend', lv: 2, fit: '옆구리 늘이기', name: '옆으로 기울이기', T: 340, aL: 200, fL: 190, aR: 10, fR: 325, tL: 188, sL: 188, tR: 172, sR: 172 },
+  { id: 'tree', lv: 3, fit: '균형', name: '나무 자세', T: 0, aL: 335, fL: 25, aR: 25, fR: 335, tL: 245, sL: 125, tR: 180, sR: 180 },
+  { id: 'flamingo', lv: 3, fit: '균형', name: '플라밍고', T: 0, aL: 270, fL: 270, aR: 90, fR: 90, tL: 235, sL: 170, tR: 180, sR: 180 },
+  { id: 'sideleg', lv: 3, fit: '균형 · 엉덩이 힘', name: '옆으로 다리 들기', T: 0, aL: 270, fL: 270, aR: 90, fR: 90, tL: 180, sL: 180, tR: 135, sR: 135 },
+  { id: 'stork', lv: 3, fit: '균형 · 배 힘', name: '무릎 높이 황새', side: true, T: 0, aL: 90, fL: 90, aR: 90, fR: 90, tL: 90, sL: 180, tR: 180, sR: 180 },
+  { id: 'glide', lv: 3, fit: '균형 · 등 힘', name: '날아가는 비행기', side: true, T: 65, aL: 70, fL: 70, aR: 70, fR: 70, tL: 280, sL: 280, tR: 180, sR: 180 },
+  { id: 'comet', lv: 3, fit: '균형 · 옆구리 힘', name: '별똥별', T: 335, aL: 225, fL: 225, aR: 30, fR: 30, tL: 185, sL: 185, tR: 115, sR: 115 }
 ];
+const SHAPE_LEVEL = { easy: [1, 1, 2, 2, 2], mid: [1, 2, 2, 3, 3], hard: [2, 3, 3, 3, 3] };
+function pickShapes(level = 'easy', rnd = Math.random) {
+  const bag = {}, out = [];
+  [1, 2, 3].forEach(l => { bag[l] = SHAPES.filter(p => p.lv === l).sort(() => rnd() - .5); });
+  (SHAPE_LEVEL[level] || SHAPE_LEVEL.easy).forEach(l => out.push(bag[l].pop()));
+  return out;
+}
 const dirVec = d => [Math.sin(d * Math.PI / 180), -Math.cos(d * Math.PI / 180)];
 function shapeJoints(p) {
   const hw = p.side ? .03 : .13, sw = p.side ? .03 : .22, tv = dirVec(p.T), sc = [tv[0] * .62, tv[1] * .62];
@@ -411,7 +424,7 @@ function starsFor(game, n) {
   const c = { balloon: [5, 12, 20], balance: [3, 6, 10], poses: [1, 3, 5], step: [8, 18, 28], trace: [1, 3, 5], race: [5, 12, 20], hoop: [4, 10, 18] }[game];
   return n >= c[2] ? 3 : n >= c[1] ? 2 : 1;
 }
-if (typeof module !== 'undefined') module.exports = { coverView, mapPoint, fullBody, upperBody, oneLeg, POSES, starsFor, footState, makeChart, judge, SHAPES, SEGS, shapeJoints, matchShape, userDirs, steerAngle, steerValue, bodyVisible, shotStep, aimX, isBasket, palmsOf, fromHalf, vsResult, handInfo };
+if (typeof module !== 'undefined') module.exports = { coverView, mapPoint, fullBody, upperBody, oneLeg, POSES, starsFor, footState, makeChart, judge, SHAPES, SEGS, shapeJoints, matchShape, userDirs, pickShapes, steerAngle, steerValue, bodyVisible, shotStep, aimX, isBasket, palmsOf, fromHalf, vsResult, handInfo };
 </script>
 
 <script>
@@ -711,7 +724,7 @@ function frame(now) {
     else {
       g.phase = 'play'; g.t0 = now; beep(880, 200);
       if (g.players) {
-        const shared = { seq: [...SHAPES].sort(() => Math.random() - .5).slice(0, 5), chart: makeChart(20), seed: Math.random() * 4e9 >>> 0 };
+        const shared = { seq: pickShapes(g.level), chart: makeChart(20), seed: Math.random() * 4e9 >>> 0 };
         g.players.forEach(P => initPlay(P, now, shared));
       } else if (g.vs) { g.items = []; g.vsScore = [0, 0]; g.spawn = 0; }
       else initPlay(g, now);
@@ -729,7 +742,7 @@ function seeded(a) { return () => { a = a + 0x6D2B79F5 >>> 0; let t = a; t = Mat
 function initPlay(g, now, shared) {
   g.t0 = now; g.score = 0;
   if (g.game === 'poses') { g.seq = Array.from({ length: 5 }, (_, i) => CARDS[i % 3]).sort(() => Math.random() - .5); }
-  if (g.game === 'trace') { g.seq = shared ? shared.seq : [...SHAPES].sort(() => Math.random() - .5).slice(0, 5); g.idx = 0; g.mode = 'ready'; g.modeT = now; g.hold = 0; g.miss = 0; g.okMs = 0; }
+  if (g.game === 'trace') { g.seq = shared ? shared.seq : pickShapes(g.level); g.idx = 0; g.mode = 'ready'; g.modeT = now; g.hold = 0; g.miss = 0; g.okMs = 0; }
   if (g.game === 'hoop') { g.shot = {}; g.ball = null; g.px2 = .5; g.msg = null; }
   if (g.game === 'race') { g.carX = .5; g.steer = 0; g.road = 0; g.items = []; g.spawn = now + 600; g.crash = 0; g.rnd = shared ? seeded(shared.seed) : null; }
   if (g.game === 'step') {
@@ -932,7 +945,7 @@ function traceFrame(g, x, now, dt, W, H, view) {
     g.mode = 'rest'; g.modeT = now; g.lastOk = ok;
   };
   if (g.mode === 'ready') {
-    hud((g.idx + 1) + ' / 5');
+    hud((g.idx + 1) + ' / 5 · ' + p.fit);
     say(p.name + ' 따라 해요 ' + Math.max(1, Math.ceil(5 - el / 1000)) + '초', false);
     if (el < 300) say(p.name + ' 따라 해요', true);
     g.okMs = r.ok ? g.okMs + dt : 0;
@@ -1173,7 +1186,9 @@ function exitTv() {
 }
 document.querySelectorAll('[data-game]').forEach(b => b.addEventListener('click', () => {
   pickGame = b.dataset.game; $('pickTitle').textContent = b.textContent.trim();
-  $('pickLevel').hidden = pickGame !== 'balloon';
+  const LV = { balloon: ['아무 풍선이나', '빨간 풍선만', '파랑은 왼손<br>분홍은 오른손'], trace: ['쉬운 자세와<br>힘 자세', '힘 자세와<br>균형 자세', '균형 자세<br>위주'] }[pickGame];
+  $('pickLevel').hidden = !LV;
+  if (LV) ['lvlEasy', 'lvlMid', 'lvlHard'].forEach((id, i) => { $(id).innerHTML = LV[i]; });
   $('pick').hidden = false; $('pickSolo').focus();
 }));
 let pickGame = 'balloon';
