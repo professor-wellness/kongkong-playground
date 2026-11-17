@@ -37,6 +37,8 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
 .lvl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .lvl button { font-family: var(--display); font-size: 1.25rem; color: var(--ink); background: #fff; border: 3px solid var(--line); border-radius: 14px; padding: 6px 4px; cursor: pointer; display: grid; gap: 2px; line-height: 1.2; }
 .lvl button small { font-family: var(--body); font-size: .8125rem; }
+.lvl.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.lvl button[hidden] { display: none; }
 .lvl button[aria-checked="true"] { background: var(--sun); box-shadow: inset 0 0 0 2px var(--line); }
 #pick { position: fixed; inset: 0; z-index: 25; background: rgba(35, 57, 91, .55); display: flex; align-items: safe center; justify-content: center; padding: 16px; overflow-y: auto; }
 .pick-box { background: var(--paper); border: 3px solid var(--line); border-radius: 20px; padding: 18px; width: min(520px, 100%); display: grid; gap: 12px; }
@@ -223,6 +225,7 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
   <div class="games">
     <button class="game" type="button" data-game="balloon"><span aria-hidden="true">🎈</span>풍선 팡팡</button>
     <button class="game" type="button" data-game="step"><span aria-hidden="true">👣</span>콩콩 스텝</button>
+    <button class="game" type="button" data-game="hop"><span aria-hidden="true">🐸</span>폴짝 선 넘기</button>
     <button class="game" type="button" data-game="trace"><span aria-hidden="true">🧘</span>자세 틀 따라 하기</button>
     <button class="game" type="button" data-game="race"><span aria-hidden="true">🏎️</span>씽씽 레이싱</button>
     <button class="game" type="button" data-game="hoop"><span aria-hidden="true">🏀</span>쏙쏙 농구</button>
@@ -236,7 +239,8 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
       <li>자세 틀 놀이는 초급·중급·고급으로 고를 수 있어요. 한 발로 서는 균형 자세가 많으니 어른이 곁에서 살펴 주세요. 틀과 몸이 겹치지 않아도 팔다리 방향이 맞으면 인정합니다.</li>
       <li>카카오톡 같은 앱 안에서 열면 일부 기능이 막힐 수 있어요. Chrome이나 삼성 인터넷으로 열어 주세요.</li>
       <li>TV로 크게 하려면 휴대폰 화면 미러링(삼성은 Smart View)을 켠 뒤 <b>가로 (TV)</b>를 고르고, 휴대폰을 옆으로 눕혀 TV 아래에 세워 주세요.</li>
-      <li>콩콩 스텝은 양말을 벗고 미끄럽지 않은 바닥에서 해 주세요.</li>
+      <li>폴짝 선 넘기는 화면 가운데 선을 20초 동안 좌우로 넘는 횟수를 세요. 초급은 두 발, 고급은 한 발로 뛰어요. 시작할 때 선 위에 서 주세요.</li>
+      <li>콩콩 스텝과 폴짝 선 넘기는 양말을 벗고 미끄럽지 않은 바닥에서 해 주세요.</li>
       <li>놀이 한 판은 1분 안팎입니다. 몇 판 한 뒤에는 화면을 끄고 몸으로 놀아 주세요.</li>
       <li>이 시안은 어린이 대상 정확도 시험 전이며, 발달 평가나 치료 도구가 아닙니다.</li>
     </ul>
@@ -293,6 +297,12 @@ function footState(lx, rx, center, unit) {
   const spread = Math.abs(lx - rx), off = (lx + rx) / 2 - center;
   if (Math.abs(off) > unit * .4) return off < 0 ? 'left' : 'right';
   return spread > unit * 1.4 ? 'both' : 'center';
+}
+/* 폴짝 선 넘기: 거울 좌표 기준. 초급은 두 발목이 모두 선을 넘어야, 고급은 디딘 발(아래쪽 발목)이 넘어야 그쪽에 있다고 본다. 선 근처는 어느 쪽도 아님 */
+function hopSide(lm, center, unit, level) {
+  const m = unit * .2, a = 1 - lm[27].x, b = 1 - lm[28].x;
+  if (level === 'hard') { const f = lm[27].y > lm[28].y ? a : b; return f < center - m ? 'L' : f > center + m ? 'R' : null; }
+  return Math.max(a, b) < center - m ? 'L' : Math.min(a, b) > center + m ? 'R' : null;
 }
 function makeChart(n, rnd = Math.random) {
   const out = []; let t = 2200, prev = 'center';
@@ -425,10 +435,10 @@ function fromHalf(lm, x0) { return lm ? lm.map(q => ({ x: x0 + q.x * .5, y: q.y,
 function vsResult(a, b) { return a === b ? 'tie' : a > b ? 'blue' : 'orange'; }
 function judge(ms) { const a = Math.abs(ms); return a <= 200 ? 2 : a <= 400 ? 1 : 0; }
 function starsFor(game, n) {
-  const c = { balloon: [5, 12, 20], balance: [3, 6, 10], poses: [1, 3, 5], step: [8, 18, 28], trace: [1, 3, 5], race: [5, 12, 20], hoop: [4, 10, 18] }[game];
+  const c = { balloon: [5, 12, 20], balance: [3, 6, 10], poses: [1, 3, 5], step: [8, 18, 28], hop: [8, 16, 26], trace: [1, 3, 5], race: [5, 12, 20], hoop: [4, 10, 18] }[game];
   return n >= c[2] ? 3 : n >= c[1] ? 2 : 1;
 }
-if (typeof module !== 'undefined') module.exports = { coverView, mapPoint, fullBody, upperBody, oneLeg, POSES, starsFor, footState, makeChart, judge, SHAPES, SEGS, shapeJoints, matchShape, userDirs, pickShapes, steerAngle, steerValue, bodyVisible, shotStep, aimX, isBasket, palmsOf, fromHalf, vsResult, handInfo };
+if (typeof module !== 'undefined') module.exports = { hopSide, coverView, mapPoint, fullBody, upperBody, oneLeg, POSES, starsFor, footState, makeChart, judge, SHAPES, SEGS, shapeJoints, matchShape, userDirs, pickShapes, steerAngle, steerValue, bodyVisible, shotStep, aimX, isBasket, palmsOf, fromHalf, vsResult, handInfo };
 </script>
 
 <script>
@@ -547,8 +557,8 @@ function cropHalf(v, i) {
 }
 
 let G = null, current = null;
-const INTRO = { balloon: '손으로 풍선을 터트려요', balance: '한 발을 들고 알을 깨워요', poses: '동물을 따라 해 봐요', step: '화살표가 선에 닿을 때 콩콩 밟아요', trace: '초록 틀과 똑같이 자세를 잡아요', race: '두 손을 뻗어 핸들을 잡아요', hoop: '좌우로 움직여 골대에 맞추고 두 손을 번쩍 올려요' };
-const NEED = { balloon: upperBody, balance: fullBody, poses: fullBody, step: fullBody, trace: fullBody, race: upperBody, hoop: bodyVisible };
+const INTRO = { balloon: '손으로 풍선을 터트려요', balance: '한 발을 들고 알을 깨워요', poses: '동물을 따라 해 봐요', step: '화살표가 선에 닿을 때 콩콩 밟아요', hop: '가운데 선을 좌우로 폴짝 넘어요', trace: '초록 틀과 똑같이 자세를 잡아요', race: '두 손을 뻗어 핸들을 잡아요', hoop: '좌우로 움직여 골대에 맞추고 두 손을 번쩍 올려요' };
+const NEED = { balloon: upperBody, balance: fullBody, poses: fullBody, step: fullBody, hop: fullBody, trace: fullBody, race: upperBody, hoop: bodyVisible };
 const CARDS = [
   { id: 'giraffe', e: '🦒', t: '기린처럼 두 손을 위로!' },
   { id: 'plane', e: '✈️', t: '비행기처럼 팔을 쭉!' },
@@ -561,7 +571,7 @@ async function start(game, opts = {}) {
   $('home').hidden = true; $('end').hidden = true; $('play').hidden = false;
   $('hudL').textContent = ''; say('잠깐만 기다려요', false);
   beep(660, 80);
-  const g = G = { game, level: opts.level || 'easy', vs: !!opts.vs, lms: [null, null], raw: [null, null], players: opts.vs && game !== 'balloon' ? [0, 1].map(i => ({ game, side: i, sub: true, cam: false, lm: null, v: halfCanvas[i], sparks: [], score: 0, t0: 0 })) : null, vsScore: [0, 0], cam: false, stream: null, pose: null, lm: null, phase: 'ready', t0: performance.now(), hold: 0, score: 0, items: [], sparks: [], last: performance.now(), down: null, seq: [], idx: 0, poseHold: 0, spawn: 0 };
+  const g = G = { game, level: opts.level || 'easy', vs: !!opts.vs, lms: [null, null], raw: [null, null], players: opts.vs && game !== 'balloon' ? [0, 1].map(i => ({ game, level: opts.level || 'easy', side: i, sub: true, cam: false, lm: null, v: halfCanvas[i], sparks: [], score: 0, t0: 0 })) : null, vsScore: [0, 0], cam: false, stream: null, pose: null, lm: null, phase: 'ready', t0: performance.now(), hold: 0, score: 0, items: [], sparks: [], last: performance.now(), down: null, seq: [], idx: 0, poseHold: 0, spawn: 0 };
   const toTouch = why => {
     if (g.stream) g.stream.getTracks().forEach(t => t.stop());
     g.stream = null; g.cam = false; $('vid').srcObject = null;
@@ -648,7 +658,7 @@ function finish(n) {
   $('total').textContent = '⭐ ' + total;
   $('endStars').textContent = '⭐'.repeat(s);
   $('endText').textContent = '참 잘했어요!';
-  $('endSub').textContent = game === 'hoop' ? '농구 점수 ' + n + '점이에요' : game === 'race' ? '별 ' + n + '개를 모았어요' : game === 'trace' ? '자세 ' + n + '개를 해냈어요' : game === 'step' ? '콩콩 점수 ' + n + '점이에요' : game === 'balloon' ? '풍선 ' + n + '개를 터트렸어요' : game === 'balance' ? n.toFixed(0) + '초 동안 버텼어요' : '동물 ' + n + '마리를 따라 했어요';
+  $('endSub').textContent = game === 'hoop' ? '농구 점수 ' + n + '점이에요' : game === 'race' ? '별 ' + n + '개를 모았어요' : game === 'trace' ? '자세 ' + n + '개를 해냈어요' : game === 'step' ? '콩콩 점수 ' + n + '점이에요' : game === 'hop' ? '선을 ' + n + '번 넘었어요' : game === 'balloon' ? '풍선 ' + n + '개를 터트렸어요' : game === 'balance' ? n.toFixed(0) + '초 동안 버텼어요' : '동물 ' + n + '마리를 따라 했어요';
   $('end').hidden = false; $('again').focus();
   [660, 880, 1175].forEach((f, i) => setTimeout(() => beep(f, 180), i * 160));
   try { speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance('참 잘했어요'), { lang: 'ko-KR' })); } catch (e) {}
@@ -724,7 +734,7 @@ function frame(now) {
     if (ok) { g.calibOk = g.calibOk ?? now; if (now - g.calibOk > 1200) { g.phase = 'count'; g.t0 = now; } } else g.calibOk = null;
   } else if (g.phase === 'count') {
     const left = 3 - Math.floor((now - g.t0) / 1000);
-    if (left > 0) { say(g.game === 'balloon' ? LEVEL_TIP[g.level] : g.vs ? '같은 문제로 점수를 겨뤄요' : INTRO[g.game]); x.font = '120px Jua, sans-serif'; x.fillStyle = '#23395b'; x.fillText(left, W / 2, H * .42); }
+    if (left > 0) { say(g.game === 'balloon' ? LEVEL_TIP[g.level] : g.game === 'hop' ? HOP_TIP[g.level] : g.vs ? '같은 문제로 점수를 겨뤄요' : INTRO[g.game]); x.font = '120px Jua, sans-serif'; x.fillStyle = '#23395b'; x.fillText(left, W / 2, H * .42); }
     else {
       g.phase = 'play'; g.t0 = now; beep(880, 200);
       if (g.players) {
@@ -749,6 +759,10 @@ function initPlay(g, now, shared) {
   if (g.game === 'trace') { g.seq = shared ? shared.seq : pickShapes(g.level); g.idx = 0; g.mode = 'ready'; g.modeT = now; g.hold = 0; g.miss = 0; g.okMs = 0; }
   if (g.game === 'hoop') { g.shot = {}; g.ball = null; g.px2 = .5; g.msg = null; }
   if (g.game === 'race') { g.carX = .5; g.steer = 0; g.road = 0; g.items = []; g.spawn = now + 600; g.crash = 0; g.rnd = shared ? seeded(shared.seed) : null; }
+  if (g.game === 'hop') {
+    g.side = null; g.twoMs = 0; g.flash = null; g.center = .5; g.unit = .1;
+    if (g.cam && g.lm) { g.center = 1 - (g.lm[27].x + g.lm[28].x) / 2; g.unit = Math.abs(g.lm[11].x - g.lm[12].x) || .1; }
+  }
   if (g.game === 'step') {
     g.chart = shared ? shared.chart.map(n => ({ ...n })) : makeChart(20); g.taps = {}; g.flash = null; g.prevState = 'center';
     if (g.cam && g.lm) { g.center = 1 - (g.lm[27].x + g.lm[28].x) / 2; g.unit = Math.abs(g.lm[11].x - g.lm[12].x) || .1; }
@@ -904,6 +918,50 @@ function stepFrame(g, x, now, W, H) {
   say(next ? KIND[next.kind] : '', false);
   if (g.flash && now - g.flash.t < 500) { x.font = '48px Jua, sans-serif'; x.fillStyle = '#23395b'; x.fillText(g.flash.text, W / 2, H * .55); }
   if (!next && t > g.chart[g.chart.length - 1].t + 800) finish(g.score);
+}
+const HOP_LEN = 20, HOP_TIP = { easy: '두 발 모아 선을 좌우로 넘어요', hard: '한 발로 선을 좌우로 넘어요' };
+function hopFrame(g, x, now, dt, W, H, view) {
+  const el = (now - g.t0) / 1000, rest = Math.max(0, HOP_LEN - el);
+  const lx = g.cam && view ? view.W - (view.ox + (1 - g.center) * view.dw) : W / 2;
+  let side = null, body = true;
+  if (g.cam) {
+    body = !!g.lm && fullBody(g.lm);
+    if (body) { side = hopSide(g.lm, g.center, g.unit, g.level); if (g.level === 'hard' && !oneLeg(g.lm)) g.twoMs += dt; }
+  } else if (g.down) side = g.down.x < lx ? 'L' : 'R';
+  g.down = null;
+  if (side && side !== g.side) {
+    if (g.side) {
+      if (g.level === 'hard' && g.cam && g.twoMs > 350) { g.flash = { t: now, text: '한 발로 뛰어요!', bad: true }; beep(330, 100); }
+      else { g.score++; g.flash = { t: now, text: '+1' }; beep(g.score % 2 ? 880 : 990, 60); burst(side === 'L' ? lx / 2 : (lx + W) / 2, H * .62); }
+    }
+    g.side = side; g.twoMs = 0;
+  }
+  /* 양쪽 칸: 지금 서 있는 쪽은 노랗게, 다음에 갈 쪽에는 화살표 */
+  const top = H * .2;
+  x.fillStyle = g.side === 'L' ? 'rgba(255,207,63,.45)' : 'rgba(255,253,245,.22)'; x.fillRect(0, top, lx, H - top);
+  x.fillStyle = g.side === 'R' ? 'rgba(255,207,63,.45)' : 'rgba(255,253,245,.22)'; x.fillRect(lx, top, W - lx, H - top);
+  x.save(); x.lineCap = 'round';
+  x.strokeStyle = '#ffffff'; x.lineWidth = 16; x.beginPath(); x.moveTo(lx, top); x.lineTo(lx, H); x.stroke();
+  x.strokeStyle = '#ff6b8a'; x.lineWidth = 8; x.setLineDash([26, 18]); x.lineDashOffset = -now / 30; x.beginPath(); x.moveTo(lx, top); x.lineTo(lx, H); x.stroke();
+  x.restore();
+  const to = g.side === 'L' ? 'R' : g.side === 'R' ? 'L' : null, as = Math.min(W / 5, 90), bob = Math.sin(now / 160) * 8;
+  x.font = as + 'px serif';
+  if (to !== 'R') x.fillText('⬅️', lx / 2 + bob, H * .82);
+  if (to !== 'L') x.fillText('➡️', (lx + W) / 2 - bob, H * .82);
+  /* 남은 시간 막대와 큰 숫자 */
+  const bw = W * .6, bx = (W - bw) / 2, by = top - 26;
+  x.fillStyle = 'rgba(255,253,245,.9)'; x.fillRect(bx, by, bw, 16);
+  x.fillStyle = rest < 5 ? '#ff6b6b' : '#47c46b'; x.fillRect(bx, by, bw * rest / HOP_LEN, 16);
+  x.strokeStyle = '#23395b'; x.lineWidth = 3; x.strokeRect(bx, by, bw, 16);
+  x.font = Math.min(W, H) * .2 + 'px Jua, sans-serif'; x.lineWidth = 8; x.strokeStyle = '#fffdf5';
+  x.strokeText(g.score, W / 2, H * .38); x.fillStyle = '#23395b'; x.fillText(g.score, W / 2, H * .38);
+  if (g.flash && now - g.flash.t < 600) {
+    x.font = '40px Jua, sans-serif'; x.fillStyle = g.flash.bad ? '#e8384f' : '#ff9a3c';
+    x.fillText(g.flash.text, g.flash.bad ? W / 2 : g.side === 'L' ? lx / 2 : (lx + W) / 2, H * .55 - (now - g.flash.t) / 12);
+  }
+  hud('🐸 ' + g.score + ' · ' + Math.ceil(rest) + '초');
+  say(!body ? '온몸이 보이게 서요' : g.cam ? HOP_TIP[g.level] : '선 양쪽을 번갈아 눌러요', false);
+  if (el >= HOP_LEN) finish(g.score);
 }
 const outlineCache = new Map();
 function outlineFor(p, W, H, dpr) {
@@ -1114,6 +1172,7 @@ function playFrame(g, x, now, dt, W, H, hands, view) {
   if (g.game === 'race') return raceFrame(g, x, now, dt, W, H, view);
   if (g.game === 'trace') return traceFrame(g, x, now, dt, W, H, view);
   if (g.game === 'step') return stepFrame(g, x, now, W, H);
+  if (g.game === 'hop') return hopFrame(g, x, now, dt, W, H, view);
   if (g.game === 'balloon') {
     const LEN = 40, r = Math.max(34, Math.min(W, H) * .09);
     $('hudL').textContent = '🎈 ' + g.score + ' · ' + Math.max(0, Math.ceil(LEN - el)) + '초';
@@ -1190,7 +1249,11 @@ function exitTv() {
 }
 document.querySelectorAll('[data-game]').forEach(b => b.addEventListener('click', () => {
   pickGame = b.dataset.game; $('pickTitle').textContent = b.textContent.trim();
-  const LV = { balloon: ['아무 풍선이나', '빨간 풍선만', '파랑은 왼손<br>분홍은 오른손'], trace: ['쉬운 자세와<br>힘 자세', '힘 자세와<br>균형 자세', '균형 자세<br>위주'] }[pickGame];
+  const LV = { balloon: ['아무 풍선이나', '빨간 풍선만', '파랑은 왼손<br>분홍은 오른손'], trace: ['쉬운 자세와<br>힘 자세', '힘 자세와<br>균형 자세', '균형 자세<br>위주'], hop: ['두 발로<br>폴짝', '', '한 발로<br>폴짝'] }[pickGame];
+  const two = pickGame === 'hop';
+  $('pickLevel').classList.toggle('two', two);
+  document.querySelector('[data-lvl="mid"]').hidden = two;
+  if (two && pickLevel === 'mid') document.querySelector('[data-lvl="easy"]').click();
   $('pickLevel').hidden = !LV;
   if (LV) ['lvlEasy', 'lvlMid', 'lvlHard'].forEach((id, i) => { $(id).innerHTML = LV[i]; });
   $('pick').hidden = false; $('pickSolo').focus();
