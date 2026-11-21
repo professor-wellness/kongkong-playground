@@ -74,7 +74,17 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
 .hub-card:active { transform: translateY(4px); box-shadow: 0 3px 0 var(--line); }
 .hub-card span { font-size: 5rem; line-height: 1.1; }
 .hub-card small { font-family: var(--body); font-size: 1rem; }
-.hub-card.play { background: #ffe0e6; } .hub-card.tale { background: #fff1b8; }
+.hub-card.play { background: #ffe0e6; } .hub-card.tale { background: #fff1b8; } .hub-card.move { background: #d9f2ff; }
+@media (min-width: 900px) { .hub-cards.three { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.routines { display: grid; gap: 16px; }
+.routine { text-align: left; font-family: var(--body); color: var(--ink); background: #d9f2ff; border: 3px solid var(--line); border-radius: 22px; box-shadow: 0 6px 0 var(--line); padding: 16px 18px; cursor: pointer; display: grid; grid-template-columns: auto 1fr; column-gap: 14px; row-gap: 4px; align-items: center; }
+.routine:nth-child(2) { background: #e6f7d9; }
+.routine:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--line); }
+.routine .r-ic2 { font-size: 3.5rem; grid-row: span 2; line-height: 1; }
+.routine b { font-family: var(--display); font-size: 1.6rem; font-weight: 400; }
+.routine small { font-size: .95rem; }
+.routine .chips { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.routine .chips i { font-style: normal; font-size: .9rem; background: var(--paper); border: 2px solid var(--line); border-radius: 999px; padding: 2px 10px; }
 .shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
 .book { font-family: var(--display); color: var(--ink); text-align: left; background: var(--paper); border: 3px solid var(--line); border-radius: 16px; overflow: hidden; padding: 0; cursor: pointer; display: grid; }
 .book svg { display: block; width: 100%; height: auto; border-bottom: 3px solid var(--line); }
@@ -160,10 +170,26 @@ button:focus-visible { outline: 4px solid var(--berry); outline-offset: 2px; }
 
 <div class="page" id="hub">
   <div class="top"><h1>오늘은 뭐 할까?</h1></div>
-  <div class="hub-cards">
+  <div class="hub-cards three">
     <button class="hub-card play" type="button" id="goPlay"><span aria-hidden="true">🤸</span>콩콩 놀이터<small>카메라 앞에서 몸으로 놀아요</small></button>
     <button class="hub-card tale" type="button" id="goTales"><span aria-hidden="true">📖</span>동화나라<small>엄마 아빠와 함께 동화를 읽어요</small></button>
+    <button class="hub-card move" type="button" id="goMove"><span aria-hidden="true">🌞</span>아침 몸풀기<small>카메라 앞에서 동작을 맞추며 운동해요</small></button>
   </div>
+</div>
+
+<div class="page" id="move" hidden>
+  <button class="back" type="button" id="moveBack">‹ 처음으로</button>
+  <div class="top"><h1>아침 몸풀기</h1></div>
+  <div class="routines" id="routines"></div>
+  <section class="parent" aria-labelledby="mTitle">
+    <h2 id="mTitle">보호자 안내</h2>
+    <ul>
+      <li>횟수 운동은 동작을 한 번 할 때마다, 버티기 운동은 자세가 맞는 동안 1초씩 소리 내어 세어 줘요.</li>
+      <li>서서 하는 체조는 앞모습, 매트 운동은 옆모습으로 판정해요. 매트 운동은 휴대폰을 바닥에 가로로 눕혀 몸 옆에 2m쯤 떨어뜨려 두세요.</li>
+      <li>잘 안 세어질 때는 화면을 눌러 다음 동작으로 넘어갈 수 있어요.</li>
+      <li>아프거나 불편한 동작은 건너뛰고, 숨을 참지 말고 천천히 해 주세요.</li>
+    </ul>
+  </section>
 </div>
 
 <div class="page" id="tales" hidden>
@@ -434,11 +460,65 @@ function handInfo(lm, label, aspect) {
 function fromHalf(lm, x0) { return lm ? lm.map(q => ({ x: x0 + q.x * .5, y: q.y, visibility: q.visibility })) : null; }
 function vsResult(a, b) { return a === b ? 'tie' : a > b ? 'blue' : 'orange'; }
 function judge(ms) { const a = Math.abs(ms); return a <= 200 ? 2 : a <= 400 ? 1 : 0; }
+/* 아침 몸풀기: 관절 각도로 동작을 판정한다. asp는 영상 가로/세로 비율로, x를 늘려 각도를 실제 모양대로 잰다 */
+function jAng(lm, a, b, c, asp = 1) {
+  const ax = (lm[a].x - lm[b].x) * asp, ay = lm[a].y - lm[b].y, cx = (lm[c].x - lm[b].x) * asp, cy = lm[c].y - lm[b].y;
+  const d = Math.hypot(ax, ay) * Math.hypot(cx, cy) || 1e-6;
+  return Math.acos(Math.max(-1, Math.min(1, (ax * cx + ay * cy) / d))) * 180 / Math.PI;
+}
+/* 옆모습: 카메라에 더 잘 보이는 쪽 팔다리를 쓴다 */
+const SIDE_IDS = { L: { sh: 11, el: 13, wr: 15, hip: 23, kn: 25, an: 27 }, R: { sh: 12, el: 14, wr: 16, hip: 24, kn: 26, an: 28 } };
+function bestSide(lm) {
+  const v = s => Object.values(SIDE_IDS[s]).reduce((a, i) => a + (lm[i].visibility || 0), 0);
+  return SIDE_IDS[v('L') >= v('R') ? 'L' : 'R'];
+}
+function sideBody(lm) { if (!lm) return false; const S = bestSide(lm); return [S.sh, S.hip, S.kn, S.an].every(i => lm[i].visibility > .5); }
+function lying(lm, S, asp) { return Math.abs(lm[S.sh].y - lm[S.hip].y) < Math.abs(lm[S.sh].x - lm[S.hip].x) * asp * .7; }
+function leanDeg(lm, asp) {
+  const sx = 1 - (lm[11].x + lm[12].x) / 2, hx = 1 - (lm[23].x + lm[24].x) / 2, sy = (lm[11].y + lm[12].y) / 2, hy = (lm[23].y + lm[24].y) / 2;
+  return Math.atan2((sx - hx) * asp, hy - sy) * 180 / Math.PI;
+}
+const kneeMin = (lm, asp) => Math.min(jAng(lm, 23, 25, 27, asp), jAng(lm, 24, 26, 28, asp));
+const kneeAvg = (lm, asp) => (jAng(lm, 23, 25, 27, asp) + jAng(lm, 24, 26, 28, asp)) / 2;
+const armsUp = lm => lm[15].y < lm[11].y && lm[16].y < lm[12].y;
+/* 앞모습 스쿼트는 무릎 각도가 잘 안 보이므로, 골반과 무릎의 높이 차를 몸통 길이와 비교한다 */
+const thighDrop = lm => ((lm[25].y + lm[26].y) / 2 - (lm[23].y + lm[24].y) / 2) / torso(lm);
+const feetGap = (lm, asp) => Math.abs(lm[27].x - lm[28].x) / (Math.abs(lm[11].x - lm[12].x) || .05);
+/* kind: hold는 n초 버티기, rep는 a 자세에서 b 자세로 갈 때마다 1회 */
+const MOVES = {
+  reach: { name: '기지개 켜기', kind: 'hold', n: 8, tip: '두 손을 머리 위로 쭉 뻗어요', ok: (lm, a) => lm[15].y < lm[0].y && lm[16].y < lm[0].y },
+  sideL: { name: '왼쪽으로 기울이기', kind: 'hold', n: 8, tip: '두 손을 올리고 몸을 왼쪽으로 기울여요', ok: (lm, a) => armsUp(lm) && leanDeg(lm, a) < -9 },
+  sideR: { name: '오른쪽으로 기울이기', kind: 'hold', n: 8, tip: '두 손을 올리고 몸을 오른쪽으로 기울여요', ok: (lm, a) => armsUp(lm) && leanDeg(lm, a) > 9 },
+  squat: { name: '스쿼트', kind: 'rep', n: 10, tip: '의자에 앉듯 엉덩이를 내렸다 일어나요', a: lm => thighDrop(lm) > .8, b: lm => thighDrop(lm) < .55 },
+  jack: { name: '팔 벌려 뛰기', kind: 'rep', n: 10, tip: '팔을 올리며 다리를 벌리고, 내리며 모아요', a: (lm, s) => !armsUp(lm) && feetGap(lm, s) < 1.3, b: (lm, s) => armsUp(lm) && feetGap(lm, s) > 1.6 },
+  tree: { name: '나무 자세', kind: 'hold', n: 10, tip: '한 발을 들어 다른 다리에 대고 버텨요', ok: (lm, a) => Math.abs(lm[27].y - lm[28].y) / torso(lm) > .2 },
+  bridge: { name: '브릿지', kind: 'rep', n: 10, tip: '누워서 무릎을 세우고 엉덩이를 들어 올려요', side: true,
+    a: (lm, s) => { const S = bestSide(lm); return jAng(lm, S.hip, S.kn, S.an, s) < 130 && jAng(lm, S.sh, S.hip, S.kn, s) < 145; },
+    b: (lm, s) => { const S = bestSide(lm); return jAng(lm, S.hip, S.kn, S.an, s) < 130 && jAng(lm, S.sh, S.hip, S.kn, s) > 160; } },
+  plank: { name: '플랭크', kind: 'hold', n: 10, tip: '팔꿈치를 대고 몸을 일자로 버텨요', side: true,
+    ok: (lm, s) => { const S = bestSide(lm); return jAng(lm, S.sh, S.hip, S.an, s) > 155 && lm[S.el].y - lm[S.sh].y > Math.hypot((lm[S.sh].x - lm[S.hip].x) * s, lm[S.sh].y - lm[S.hip].y) * .35 && Math.abs(lm[S.sh].y - lm[S.an].y) < Math.abs(lm[S.sh].x - lm[S.an].x) * s * .7; } },
+  legRaise: { name: '다리 들어 올리기', kind: 'rep', n: 8, tip: '누워서 두 다리를 천천히 들었다 내려요', side: true,
+    a: (lm, s) => { const S = bestSide(lm); return lying(lm, S, s) && jAng(lm, S.sh, S.hip, S.an, s) > 150; },
+    b: (lm, s) => { const S = bestSide(lm); return lying(lm, S, s) && jAng(lm, S.sh, S.hip, S.an, s) < 120; } },
+  fold: { name: '앉아서 앞으로 숙이기', kind: 'hold', n: 10, tip: '다리를 펴고 앉아 손을 발끝으로 뻗어요', side: true,
+    ok: (lm, s) => { const S = bestSide(lm); return jAng(lm, S.sh, S.hip, S.kn, s) < 85 && jAng(lm, S.hip, S.kn, S.an, s) > 140; } }
+};
+const ROUTINES = [
+  { id: 'stand', icon: '🌞', title: '서서 하는 아침 체조', how: '휴대폰을 세워 두고 2m쯤 떨어져 온몸이 보이게 서요', list: ['reach', 'sideL', 'sideR', 'squat', 'jack', 'tree'] },
+  { id: 'mat', icon: '🧘', title: '매트에서 하는 코어 운동', how: '휴대폰을 바닥에 가로로 두고, 몸 옆모습이 다 보이게 누워요', side: true, list: ['bridge', 'plank', 'legRaise', 'fold'] }
+];
+/* 횟수 세기: a 자세를 거친 뒤 b 자세가 되면 1회 */
+function repStep(st, A, B) {
+  if (A) st.armed = true;
+  if (st.armed && B) { st.armed = false; return true; }
+  return false;
+}
 function starsFor(game, n) {
+  if (game === 'move') { const t = typeof G !== 'undefined' && G && G.list ? G.list.length : 6; return n >= t ? 3 : n >= Math.ceil(t / 2) ? 2 : 1; }
   const c = { balloon: [5, 12, 20], balance: [3, 6, 10], poses: [1, 3, 5], step: [8, 18, 28], hop: [8, 16, 26], trace: [1, 3, 5], race: [5, 12, 20], hoop: [4, 10, 18] }[game];
   return n >= c[2] ? 3 : n >= c[1] ? 2 : 1;
 }
-if (typeof module !== 'undefined') module.exports = { hopSide, coverView, mapPoint, fullBody, upperBody, oneLeg, POSES, starsFor, footState, makeChart, judge, SHAPES, SEGS, shapeJoints, matchShape, userDirs, pickShapes, steerAngle, steerValue, bodyVisible, shotStep, aimX, isBasket, palmsOf, fromHalf, vsResult, handInfo };
+if (typeof module !== 'undefined') module.exports = { jAng, bestSide, sideBody, leanDeg, MOVES, ROUTINES, repStep, hopSide, coverView, mapPoint, fullBody, upperBody, oneLeg, POSES, starsFor, footState, makeChart, judge, SHAPES, SEGS, shapeJoints, matchShape, userDirs, pickShapes, steerAngle, steerValue, bodyVisible, shotStep, aimX, isBasket, palmsOf, fromHalf, vsResult, handInfo };
 </script>
 
 <script>
@@ -557,8 +637,8 @@ function cropHalf(v, i) {
 }
 
 let G = null, current = null;
-const INTRO = { balloon: '손으로 풍선을 터트려요', balance: '한 발을 들고 알을 깨워요', poses: '동물을 따라 해 봐요', step: '화살표가 선에 닿을 때 콩콩 밟아요', hop: '가운데 선을 좌우로 폴짝 넘어요', trace: '초록 틀과 똑같이 자세를 잡아요', race: '두 손을 뻗어 핸들을 잡아요', hoop: '좌우로 움직여 골대에 맞추고 두 손을 번쩍 올려요' };
-const NEED = { balloon: upperBody, balance: fullBody, poses: fullBody, step: fullBody, hop: fullBody, trace: fullBody, race: upperBody, hoop: bodyVisible };
+const INTRO = { balloon: '손으로 풍선을 터트려요', balance: '한 발을 들고 알을 깨워요', poses: '동물을 따라 해 봐요', step: '화살표가 선에 닿을 때 콩콩 밟아요', hop: '가운데 선을 좌우로 폴짝 넘어요', move: '시범 그림을 보고 천천히 따라 해요', trace: '초록 틀과 똑같이 자세를 잡아요', race: '두 손을 뻗어 핸들을 잡아요', hoop: '좌우로 움직여 골대에 맞추고 두 손을 번쩍 올려요' };
+const NEED = { balloon: upperBody, balance: fullBody, poses: fullBody, step: fullBody, hop: fullBody, move: lm => G && G.routine === 'mat' ? sideBody(lm) : fullBody(lm), trace: fullBody, race: upperBody, hoop: bodyVisible };
 const CARDS = [
   { id: 'giraffe', e: '🦒', t: '기린처럼 두 손을 위로!' },
   { id: 'plane', e: '✈️', t: '비행기처럼 팔을 쭉!' },
@@ -568,10 +648,10 @@ const CARDS = [
 let currentOpts = {};
 async function start(game, opts = {}) {
   current = game; currentOpts = opts;
-  $('home').hidden = true; $('end').hidden = true; $('play').hidden = false;
+  $('home').hidden = true; $('move').hidden = true; $('end').hidden = true; $('play').hidden = false;
   $('hudL').textContent = ''; say('잠깐만 기다려요', false);
   beep(660, 80);
-  const g = G = { game, level: opts.level || 'easy', vs: !!opts.vs, lms: [null, null], raw: [null, null], players: opts.vs && game !== 'balloon' ? [0, 1].map(i => ({ game, level: opts.level || 'easy', side: i, sub: true, cam: false, lm: null, v: halfCanvas[i], sparks: [], score: 0, t0: 0 })) : null, vsScore: [0, 0], cam: false, stream: null, pose: null, lm: null, phase: 'ready', t0: performance.now(), hold: 0, score: 0, items: [], sparks: [], last: performance.now(), down: null, seq: [], idx: 0, poseHold: 0, spawn: 0 };
+  const g = G = { game, routine: opts.routine, level: opts.level || 'easy', vs: !!opts.vs, lms: [null, null], raw: [null, null], players: opts.vs && game !== 'balloon' ? [0, 1].map(i => ({ game, level: opts.level || 'easy', side: i, sub: true, cam: false, lm: null, v: halfCanvas[i], sparks: [], score: 0, t0: 0 })) : null, vsScore: [0, 0], cam: false, stream: null, pose: null, lm: null, phase: 'ready', t0: performance.now(), hold: 0, score: 0, items: [], sparks: [], last: performance.now(), down: null, seq: [], idx: 0, poseHold: 0, spawn: 0 };
   const toTouch = why => {
     if (g.stream) g.stream.getTracks().forEach(t => t.stop());
     g.stream = null; g.cam = false; $('vid').srcObject = null;
@@ -658,7 +738,7 @@ function finish(n) {
   $('total').textContent = '⭐ ' + total;
   $('endStars').textContent = '⭐'.repeat(s);
   $('endText').textContent = '참 잘했어요!';
-  $('endSub').textContent = game === 'hoop' ? '농구 점수 ' + n + '점이에요' : game === 'race' ? '별 ' + n + '개를 모았어요' : game === 'trace' ? '자세 ' + n + '개를 해냈어요' : game === 'step' ? '콩콩 점수 ' + n + '점이에요' : game === 'hop' ? '선을 ' + n + '번 넘었어요' : game === 'balloon' ? '풍선 ' + n + '개를 터트렸어요' : game === 'balance' ? n.toFixed(0) + '초 동안 버텼어요' : '동물 ' + n + '마리를 따라 했어요';
+  $('endSub').textContent = game === 'hoop' ? '농구 점수 ' + n + '점이에요' : game === 'race' ? '별 ' + n + '개를 모았어요' : game === 'trace' ? '자세 ' + n + '개를 해냈어요' : game === 'step' ? '콩콩 점수 ' + n + '점이에요' : game === 'hop' ? '선을 ' + n + '번 넘었어요' : game === 'move' ? '동작 ' + n + '개를 해냈어요' : game === 'balloon' ? '풍선 ' + n + '개를 터트렸어요' : game === 'balance' ? n.toFixed(0) + '초 동안 버텼어요' : '동물 ' + n + '마리를 따라 했어요';
   $('end').hidden = false; $('again').focus();
   [660, 880, 1175].forEach((f, i) => setTimeout(() => beep(f, 180), i * 160));
   try { speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance('참 잘했어요'), { lang: 'ko-KR' })); } catch (e) {}
@@ -698,7 +778,7 @@ function frame(now) {
       if (!h.fist) hands.push(q);
     });
     else (g.vs ? g.lms : [g.lm]).forEach((lm, who) => {
-      if (!lm) return;
+      if (!lm || g.game === 'move') return;
       const own = [];
       palmsOf(lm, view).forEach(q => { own.push(q); rings.push({ ...q, who: g.vs ? who : -1, col: ringColor(g, q) }); });
       own.forEach(q => { q.who = who; hands.push(q); });
@@ -730,7 +810,7 @@ function frame(now) {
     if (ok) { g.calibOk = g.calibOk ?? now; if (now - g.calibOk > 1200) { g.phase = 'count'; g.t0 = now; } } else g.calibOk = null;
   } else if (g.phase === 'calib') {
     const ok = NEED[g.game](g.lm);
-    say(ok ? '좋아요, 그대로 있어요' : (g.game === 'balloon' || g.game === 'race' ? '뒤로 가서 두 손을 보여 주세요' : g.game === 'hoop' ? '뒤로 가서 허리까지 보여 주세요' : '뒤로 가서 온몸을 보여 주세요'));
+    say(ok ? '좋아요, 그대로 있어요' : (g.game === 'balloon' || g.game === 'race' ? '뒤로 가서 두 손을 보여 주세요' : g.game === 'hoop' ? '뒤로 가서 허리까지 보여 주세요' : g.game === 'move' && g.routine === 'mat' ? '몸 옆모습이 다 보이게 해요' : '뒤로 가서 온몸을 보여 주세요'));
     if (ok) { g.calibOk = g.calibOk ?? now; if (now - g.calibOk > 1200) { g.phase = 'count'; g.t0 = now; } } else g.calibOk = null;
   } else if (g.phase === 'count') {
     const left = 3 - Math.floor((now - g.t0) / 1000);
@@ -759,6 +839,7 @@ function initPlay(g, now, shared) {
   if (g.game === 'trace') { g.seq = shared ? shared.seq : pickShapes(g.level); g.idx = 0; g.mode = 'ready'; g.modeT = now; g.hold = 0; g.miss = 0; g.okMs = 0; }
   if (g.game === 'hoop') { g.shot = {}; g.ball = null; g.px2 = .5; g.msg = null; }
   if (g.game === 'race') { g.carX = .5; g.steer = 0; g.road = 0; g.items = []; g.spawn = now + 600; g.crash = 0; g.rnd = shared ? seeded(shared.seed) : null; }
+  if (g.game === 'move') moveInit(g, now);
   if (g.game === 'hop') {
     g.side = null; g.twoMs = 0; g.flash = null; g.center = .5; g.unit = .1;
     if (g.cam && g.lm) g.unit = Math.abs(g.lm[11].x - g.lm[12].x) || .1;
@@ -964,6 +1045,130 @@ function hopFrame(g, x, now, dt, W, H, view) {
   hud('🐸 ' + g.score + ' · ' + Math.ceil(rest) + '초');
   say(!body ? '온몸이 보이게 서요' : g.cam ? HOP_TIP[g.level] : '선 양쪽을 번갈아 눌러요', false);
   if (el >= HOP_LEN) finish(g.score);
+}
+/* 아침 몸풀기 시범 그림: 관절 좌표(발 아래 0, 위로 음수)를 두 장면 사이로 움직여 보여 준다 */
+function frontFig(o = {}) {
+  const sq = o.squat || 0, dn = sq * .32, sp = o.spread || 0, lean = (o.lean || 0) * Math.PI / 180;
+  const hip = [0, -.9 + dn], P = {};
+  const rot = (x, y) => { const dx = x - hip[0], dy = y - hip[1]; return [hip[0] + dx * Math.cos(lean) - dy * Math.sin(lean), hip[1] + dx * Math.sin(lean) + dy * Math.cos(lean)]; };
+  P.hipL = [-.12, hip[1]]; P.hipR = [.12, hip[1]];
+  P.anL = [-.1 - sp * .28, 0]; P.anR = [.1 + sp * .28, 0];
+  P.knL = [-.12 - sp * .14 - sq * .12, -.45 + sq * .1]; P.knR = [.12 + sp * .14 + sq * .12, -.45 + sq * .1];
+  if (o.tree) { P.anR = [.02, -.5]; P.knR = [.3, -.6]; }
+  const arms = o.arms || 'down', A = {
+    down: [[-.26, -1.08], [-.28, -.82]], up: [[-.24, -1.62], [-.18, -1.9]], wide: [[-.4, -1.5], [-.56, -1.68]], chest: [[-.26, -1.12], [-.06, -1.2]], hands: [[-.24, -1.1], [-.04, -1.12]]
+  }[arms];
+  const up = (x, y) => rot(x, y + dn);
+  P.shL = up(-.2, -1.35); P.shR = up(.2, -1.35); P.neck = up(0, -1.38); P.head = up(0, -1.55);
+  P.elL = up(A[0][0], A[0][1]); P.wrL = up(A[1][0], A[1][1]); P.elR = up(-A[0][0], A[0][1]); P.wrR = up(-A[1][0], A[1][1]);
+  P.mid = rot(0, hip[1]);
+  return { P, L: [['wrL', 'elL', 'shL', 'shR', 'elR', 'wrR'], ['neck', 'mid'], ['hipL', 'hipR'], ['hipL', 'knL', 'anL'], ['hipR', 'knR', 'anR']] };
+}
+function sideFig(P) { return { P, L: [['wr', 'el', 'sh', 'hip', 'kn', 'an'], ['sh', 'head']] }; }
+const LIE = { head: [-.78, -.09], sh: [-.58, -.07], el: [-.33, -.04], wr: [-.08, -.03], hip: [-.06, -.07] };
+const DEMO = {
+  reach: [frontFig({ arms: 'down' }), frontFig({ arms: 'up' })],
+  sideL: [frontFig({ arms: 'up' }), frontFig({ arms: 'up', lean: -16 })],
+  sideR: [frontFig({ arms: 'up' }), frontFig({ arms: 'up', lean: 16 })],
+  squat: [frontFig({ arms: 'chest' }), frontFig({ arms: 'chest', squat: 1 })],
+  jack: [frontFig({ arms: 'down' }), frontFig({ arms: 'wide', spread: 1 })],
+  tree: [frontFig({ arms: 'hands' }), frontFig({ arms: 'hands', tree: true })],
+  bridge: [sideFig({ ...LIE, kn: [.26, -.38], an: [.46, -.02] }), sideFig({ ...LIE, hip: [-.05, -.34], kn: [.28, -.44], an: [.46, -.02] })],
+  plank: [sideFig({ head: [-.6, -.1], sh: [-.46, -.08], el: [-.46, -.03], wr: [-.25, -.03], hip: [-.05, -.06], kn: [.3, -.04], an: [.62, -.03] }),
+    sideFig({ head: [-.66, -.5], sh: [-.5, -.4], el: [-.5, -.04], wr: [-.3, -.03], hip: [0, -.3], kn: [.33, -.18], an: [.66, -.05] })],
+  legRaise: [sideFig({ ...LIE, hip: [0, -.07], kn: [.4, -.07], an: [.8, -.07] }), sideFig({ ...LIE, hip: [0, -.07], kn: [.1, -.46], an: [.18, -.86] })],
+  fold: [sideFig({ head: [-.06, -.74], sh: [-.06, -.56], el: [.08, -.38], wr: [.28, -.3], hip: [0, -.08], kn: [.4, -.08], an: [.8, -.06] }),
+    sideFig({ head: [.44, -.36], sh: [.3, -.32], el: [.5, -.2], wr: [.74, -.12], hip: [0, -.08], kn: [.4, -.08], an: [.8, -.06] })]
+};
+function drawDemo(x, id, cx, cy, size, now, kind) {
+  const [A, B] = DEMO[id], per = kind === 'rep' ? 1800 : 3200, ph = (now % per) / per;
+  const t = kind === 'rep' ? (1 - Math.cos(ph * Math.PI * 2)) / 2 : Math.min(1, ph * 3);
+  const side0 = !DEMO[id][0].P.neck, s = size / (side0 ? 1.75 : 2.1), mix = k => [A.P[k][0] + (B.P[k][0] - A.P[k][0]) * t, A.P[k][1] + (B.P[k][1] - A.P[k][1]) * t];
+  const side = !A.P.neck, bx = cx, by = cy + size * (side ? .2 : .42);
+  const pt = k => { const q = mix(k); return [bx + q[0] * s, by + q[1] * s]; };
+  x.save();
+  x.fillStyle = 'rgba(255, 253, 245, .9)'; x.strokeStyle = '#23395b'; x.lineWidth = 3;
+  x.beginPath(); x.roundRect(cx - size / 2, cy - size / 2, size, size, 18); x.fill(); x.stroke();
+  x.strokeStyle = '#8fdc72'; x.lineWidth = 4; x.beginPath(); x.moveTo(cx - size * .42, by + 3); x.lineTo(cx + size * .42, by + 3); x.stroke();
+  x.strokeStyle = '#ff6b8a'; x.lineCap = 'round'; x.lineJoin = 'round'; x.lineWidth = Math.max(5, size * .05);
+  A.L.forEach(line => { x.beginPath(); line.forEach((k, i) => { const p = pt(k); i ? x.lineTo(p[0], p[1]) : x.moveTo(p[0], p[1]); }); x.stroke(); });
+  const h = pt('head'); x.fillStyle = '#ff6b8a'; x.beginPath(); x.arc(h[0], h[1], s * .12, 0, 7); x.fill();
+  x.restore();
+}
+const COUNT_WORD = ['하나', '둘', '셋', '넷', '다섯', '여섯', '일곱', '여덟', '아홉', '열', '열하나', '열둘'];
+function moveInit(g, now) {
+  const R = ROUTINES.find(r => r.id === g.routine) || ROUTINES[0];
+  g.list = R.list; g.mi = 0; g.score = 0; g.stage = 'ready'; g.stageT = now; g.rep = { armed: false }; g.cnt = 0; g.hold = 0; g.spoke = 0;
+}
+function moveFrame(g, x, now, dt, W, H) {
+  const id = g.list[g.mi], M = MOVES[id], el = now - g.stageT, v = $('vid');
+  const asp = g.cam && v.videoWidth ? v.videoWidth / v.videoHeight : 1, wide = W > H;
+  const seen = !g.cam || (M.side ? sideBody(g.lm) : fullBody(g.lm));
+  const goal = M.n + (M.kind === 'rep' ? '회' : '초');
+  hud('🌞 ' + (g.mi + 1) + ' / ' + g.list.length);
+  /* 이름표 */
+  x.font = (wide ? 30 : 28) + 'px Jua, sans-serif';
+  const title = M.name + ' ' + goal, tw = x.measureText(title).width + 36;
+  x.fillStyle = '#ffcf3f'; x.strokeStyle = '#23395b'; x.lineWidth = 3;
+  x.beginPath(); x.roundRect(W / 2 - tw / 2, 58, tw, 46, 23); x.fill(); x.stroke();
+  x.fillStyle = '#23395b'; x.fillText(title, W / 2, 82);
+  if (g.stage === 'ready') {
+    const size = Math.min(W * .62, H * .5, H - 230);
+    drawDemo(x, id, W / 2, Math.max(H * .48, 116 + size / 2), size, now, M.kind);
+    const left = Math.ceil((5000 - el) / 1000);
+    say((g.mi ? '다음은 ' : '') + M.name + ' ' + goal + (left > 0 ? ' · ' + left : ''), false);
+    if (el >= 0 && !g.introSaid) { g.introSaid = true; say(M.name + ' ' + goal + '. ' + M.tip, true); }
+    if (el >= 5000) { g.stage = 'go'; g.stageT = now; g.rep = { armed: false }; g.cnt = 0; g.hold = 0; g.spoke = 0; g.down = null; beep(880, 160); }
+    return;
+  }
+  /* 시범 그림은 구석에 작게 */
+  const ds = Math.min(W, H) * (wide ? .3 : .34);
+  drawDemo(x, id, wide ? W - ds / 2 - 12 : W - ds / 2 - 10, 120 + ds / 2, ds, now, M.kind);
+  let done = false;
+  if (M.kind === 'rep') {
+    let hit = false;
+    if (g.cam) { if (seen) hit = repStep(g.rep, M.a(g.lm, asp), M.b(g.lm, asp)); }
+    else if (g.down) hit = true;
+    if (hit) { g.cnt++; beep(990, 70); burst(W / 2, H * .42); say(COUNT_WORD[g.cnt - 1] || String(g.cnt), true); }
+    x.font = Math.min(W, H) * .24 + 'px Jua, sans-serif'; x.lineWidth = 10; x.strokeStyle = '#fffdf5';
+    const t = g.cnt + ' / ' + M.n; x.strokeText(t, W / 2, H * .44); x.fillStyle = '#23395b'; x.fillText(t, W / 2, H * .44);
+    if (!hit && !seen) say(M.side ? '몸 옆모습이 다 보이게 해요' : '온몸이 보이게 서요', false);
+    else if (!hit && el > 600 && g.cnt === 0) say(M.tip, false);
+    done = g.cnt >= M.n;
+  } else {
+    const ok = g.cam ? seen && M.ok(g.lm, asp) : !!g.holding;
+    if (ok) g.hold += dt;
+    const sec = Math.floor(g.hold / 1000);
+    if (sec > g.spoke && sec <= M.n) { g.spoke = sec; beep(sec >= M.n ? 990 : 760, 70); say(COUNT_WORD[sec - 1] || String(sec), true); }
+    const r = Math.min(W, H) * .17, cx = W / 2, cy = H * .44;
+    x.lineWidth = r * .22; x.strokeStyle = 'rgba(255,253,245,.75)'; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.stroke();
+    x.strokeStyle = ok ? '#47c46b' : '#ff9a3c'; x.beginPath(); x.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, g.hold / (M.n * 1000))); x.stroke();
+    x.font = r * 1.1 + 'px Jua, sans-serif'; x.lineWidth = 8; x.strokeStyle = '#fffdf5';
+    x.strokeText(Math.min(sec, M.n), cx, cy + 4); x.fillStyle = '#23395b'; x.fillText(Math.min(sec, M.n), cx, cy + 4);
+    if (!ok && g.spoke === 0) say(!seen ? (M.side ? '몸 옆모습이 다 보이게 해요' : '온몸이 보이게 서요') : M.tip, false);
+    else if (!ok) say('자세를 다시 잡아요', false);
+    done = g.hold >= M.n * 1000;
+  }
+  /* 판정이 안 될 때를 위해: 카메라 놀이에서는 화면을 누르면 다음 동작으로 */
+  x.font = '18px Jua, sans-serif'; x.fillStyle = 'rgba(35,57,91,.85)';
+  if (g.cam) x.fillText('잘 안 세어지면 화면을 눌러 다음 동작으로', W / 2, H - 128);
+  else x.fillText(M.kind === 'rep' ? '한 번 할 때마다 화면을 눌러요' : '버티는 동안 화면을 꾹 눌러요', W / 2, H - 128);
+  const skip = g.cam && g.down && el > 1500; g.down = null;
+  const timeout = el > (M.kind === 'rep' ? 70000 : 50000);
+  if (done || skip || timeout) {
+    if (done) { g.score++; beep(1175, 200); burst(W / 2, H * .3); burst(W / 3, H * .5); burst(W * 2 / 3, H * .5); }
+    g.mi++; g.introSaid = false; g.stage = 'ready'; g.stageT = now + (done ? 900 : 0);
+    if (done) say('잘했어요!', true);
+    if (g.mi >= g.list.length) { g.mi = g.list.length - 1; finish(g.score); }
+  }
+}
+function renderMoves() {
+  $('routines').innerHTML = ROUTINES.map(R => `<button class="routine" type="button" data-routine="${R.id}"><span class="r-ic2" aria-hidden="true">${R.icon}</span><b>${R.title}</b><small>${R.how}</small><span class="chips">${R.list.map(k => `<i>${MOVES[k].name} ${MOVES[k].n}${MOVES[k].kind === 'rep' ? '회' : '초'}</i>`).join('')}</span></button>`).join('');
+  document.querySelectorAll('[data-routine]').forEach(b => b.addEventListener('click', () => {
+    const R = ROUTINES.find(r => r.id === b.dataset.routine);
+    if (R.side) setMode('landscape');
+    enterTv(); start('move', { routine: R.id });
+  }));
 }
 const outlineCache = new Map();
 function outlineFor(p, W, H, dpr) {
@@ -1174,6 +1379,7 @@ function playFrame(g, x, now, dt, W, H, hands, view) {
   if (g.game === 'race') return raceFrame(g, x, now, dt, W, H, view);
   if (g.game === 'trace') return traceFrame(g, x, now, dt, W, H, view);
   if (g.game === 'step') return stepFrame(g, x, now, W, H);
+  if (g.game === 'move') return moveFrame(g, x, now, dt, W, H);
   if (g.game === 'hop') return hopFrame(g, x, now, dt, W, H, view);
   if (g.game === 'balloon') {
     const LEN = 40, r = Math.max(34, Math.min(W, H) * .09);
@@ -1269,9 +1475,9 @@ document.querySelectorAll('[data-lvl]').forEach(b => b.addEventListener('click',
 $('pickSolo').addEventListener('click', () => { $('pick').hidden = true; enterTv(); start(pickGame, { level: pickLevel }); });
 $('pickVs').addEventListener('click', () => { $('pick').hidden = true; setMode('landscape'); enterTv(); start(pickGame, { vs: true, level: pickLevel }); });
 $('pickCancel').addEventListener('click', () => { $('pick').hidden = true; });
-$('quit').addEventListener('click', () => { stop(); $('turn').hidden = true; $('home').hidden = false; exitTv(); });
+$('quit').addEventListener('click', () => { const w = current === 'move' ? 'move' : 'home'; stop(); $('turn').hidden = true; $(w).hidden = false; exitTv(); });
 $('again').addEventListener('click', () => { enterTv(); start(current, currentOpts); });
-$('back').addEventListener('click', () => { $('end').hidden = true; $('home').hidden = false; exitTv(); });
+$('back').addEventListener('click', () => { $('end').hidden = true; $(current === 'move' ? 'move' : 'home').hidden = false; exitTv(); });
 const cv = $('cv');
 cv.addEventListener('pointerdown', e => {
   if (!G) return;
@@ -1898,10 +2104,12 @@ $t('castPlain').addEventListener('click', () => { CAST[castTale.id] = { names: {
 $t('rClose').addEventListener('click', () => renderShelf());
 
 /* 첫 화면 이동 */
-function showScreen(id) { ['hub', 'home', 'tales'].forEach(k => { $t(k).hidden = k !== id; }); window.scrollTo(0, 0); }
+function showScreen(id) { ['hub', 'home', 'tales', 'move'].forEach(k => { $t(k).hidden = k !== id; }); window.scrollTo(0, 0); }
 $t('goPlay').addEventListener('click', () => showScreen('home'));
 $t('goTales').addEventListener('click', () => { renderShelf(); showScreen('tales'); });
 $t('talesBack').addEventListener('click', () => showScreen('hub'));
 $t('homeBack').addEventListener('click', () => showScreen('hub'));
+$t('goMove').addEventListener('click', () => { renderMoves(); showScreen('move'); });
+$t('moveBack').addEventListener('click', () => showScreen('hub'));
 </script>
 </body></html>
